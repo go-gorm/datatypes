@@ -5,6 +5,8 @@
 mysql, postgres supported
 
 ```go
+import "gorm.io/datatypes"
+
 type UserWithJSON struct {
 	gorm.Model
 	Name       string
