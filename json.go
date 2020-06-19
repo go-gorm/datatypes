@@ -36,7 +36,7 @@ func (j *JSON) Scan(value interface{}) error {
 	return err
 }
 
-// MarshalJSON to output non base64 encoded byte
+// MarshalJSON to output non base64 encoded []byte
 func (j *JSON) MarshalJSON() ([]byte, error) {
 	return json.RawMessage(*j).MarshalJSON()
 }

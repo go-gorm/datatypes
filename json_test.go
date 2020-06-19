@@ -2,6 +2,7 @@ package datatypes_test
 
 import (
 	"database/sql/driver"
+	"encoding/json"
 	"fmt"
 	"testing"
 
@@ -30,9 +31,11 @@ func TestJSON(t *testing.T) {
 		t.Errorf("failed to migrate, got error: %v", err)
 	}
 
+	user1Attrs := `{"age":18,"name":"json-1","orgs":{"orga":"orga"},"tags":["tag1","tag2"]}`
+
 	users := []UserWithJSON{{
 		Name:       "json-1",
-		Attributes: datatypes.JSON([]byte(`{"name": "json-1", "age": 18, "tags": ["tag1", "tag2"], "orgs": {"orga": "orga"}}`)),
+		Attributes: datatypes.JSON([]byte(user1Attrs)),
 	}, {
 		Name:       "json-2",
 		Attributes: datatypes.JSON([]byte(`{"name": "json-2", "age": 28, "tags": ["tag1", "tag3"], "role": "admin", "orgs": {"orgb": "orgb"}}`)),
@@ -53,4 +56,11 @@ func TestJSON(t *testing.T) {
 		t.Fatalf("failed to find user with json key, got error %v", err)
 	}
 	AssertEqual(t, result2.Name, users[0].Name)
+
+	// attributes should not marshal to base64 encoded []byte
+	result2Attrs, err := json.Marshal(&result2.Attributes)
+	if err != nil {
+		t.Fatalf("failed to marshal result2.Attributes, got error %v", err)
+	}
+	AssertEqual(t, string(result2Attrs), user1Attrs)
 }
