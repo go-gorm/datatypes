@@ -31,6 +31,8 @@ func TestJSON(t *testing.T) {
 		t.Errorf("failed to migrate, got error: %v", err)
 	}
 
+	// Go's json marshaler removes whitespace & orders keys alphabetically
+	// use to compare against marshaled []byte of datatypes.JSON
 	user1Attrs := `{"age":18,"name":"json-1","orgs":{"orga":"orga"},"tags":["tag1","tag2"]}`
 
 	users := []UserWithJSON{{
