@@ -41,6 +41,14 @@ func (j JSON) MarshalJSON() ([]byte, error) {
 	return json.RawMessage(j).MarshalJSON()
 }
 
+// UnmarshalJSON to deserialize []byte
+func (j *JSON) UnmarshalJSON(b []byte) error {
+	result := json.RawMessage{}
+	err := result.UnmarshalJSON(b)
+	*j = JSON(result)
+	return err
+}
+
 // GormDataType gorm common data type
 func (JSON) GormDataType() string {
 	return "json"
