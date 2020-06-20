@@ -65,4 +65,12 @@ func TestJSON(t *testing.T) {
 		t.Fatalf("failed to marshal result2.Attributes, got error %v", err)
 	}
 	AssertEqual(t, string(result2Attrs), user1Attrs)
+
+	// []byte should unmarshal into type datatypes.JSON
+	var j datatypes.JSON
+	if err := json.Unmarshal([]byte(user1Attrs), &j); err != nil {
+		t.Fatalf("failed to unmarshal user1Attrs, got error %v", err)
+	}
+
+	AssertEqual(t, string(j), user1Attrs)
 }
