@@ -37,8 +37,13 @@ func (j *JSON) Scan(value interface{}) error {
 }
 
 // MarshalJSON to output non base64 encoded []byte
+<<<<<<< HEAD
 func (j JSON) MarshalJSON() ([]byte, error) {
 	return json.RawMessage(j).MarshalJSON()
+=======
+func (j *JSON) MarshalJSON() ([]byte, error) {
+	return json.RawMessage(*j).MarshalJSON()
+>>>>>>> upstream/master
 }
 
 // GormDataType gorm common data type
