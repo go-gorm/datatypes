@@ -73,4 +73,16 @@ func TestJSON(t *testing.T) {
 	}
 
 	AssertEqual(t, string(j), user1Attrs)
+
+	var result3 UserWithJSON
+	if err := DB.First(&result3, datatypes.JSONQuery("attributes").Equals("json-1", "name")).Error; err != nil {
+		t.Fatalf("failed to find user with json value, got error %v", err)
+	}
+	AssertEqual(t, result3.Name, users[0].Name)
+
+	var result4 UserWithJSON
+	if err := DB.First(&result4, datatypes.JSONQuery("attributes").Equals("orgb", "orgs", "orgb")).Error; err != nil {
+		t.Fatalf("failed to find user with json value, got error %v", err)
+	}
+	AssertEqual(t, result4.Name, users[1].Name)
 }

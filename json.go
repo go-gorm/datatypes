@@ -67,9 +67,11 @@ func (JSON) GormDBDataType(db *gorm.DB, field *schema.Field) string {
 
 // JSONQueryExpression json query expression, implements clause.Expression interface to use as querier
 type JSONQueryExpression struct {
-	column  string
-	keys    []string
-	hasKeys []string
+	column      string
+	keys        []string
+	hasKeys     bool
+	equals      bool
+	equalsValue interface{}
 }
 
 // JSONQuery query column as json
@@ -79,7 +81,16 @@ func JSONQuery(column string) *JSONQueryExpression {
 
 // HasKey returns clause.Expression
 func (jsonQuery *JSONQueryExpression) HasKey(keys ...string) *JSONQueryExpression {
-	jsonQuery.hasKeys = keys
+	jsonQuery.keys = keys
+	jsonQuery.hasKeys = true
+	return jsonQuery
+}
+
+// Keys returns clause.Expression
+func (jsonQuery *JSONQueryExpression) Equals(value interface{}, keys ...string) *JSONQueryExpression {
+	jsonQuery.keys = keys
+	jsonQuery.equals = true
+	jsonQuery.equalsValue = value
 	return jsonQuery
 }
 
@@ -88,20 +99,49 @@ func (jsonQuery *JSONQueryExpression) Build(builder clause.Builder) {
 	if stmt, ok := builder.(*gorm.Statement); ok {
 		switch stmt.Dialector.Name() {
 		case "mysql":
-			if len(jsonQuery.hasKeys) > 0 {
-				builder.WriteString(fmt.Sprintf("JSON_EXTRACT(%s, '$.%s') IS NOT NULL", stmt.Quote(jsonQuery.column), strings.Join(jsonQuery.hasKeys, ".")))
+			switch {
+			case jsonQuery.hasKeys:
+				if len(jsonQuery.keys) > 0 {
+					builder.WriteString(fmt.Sprintf("JSON_EXTRACT(%s, '$.%s') IS NOT NULL", stmt.Quote(jsonQuery.column), strings.Join(jsonQuery.keys, ".")))
+				}
+			case jsonQuery.equals:
+				if len(jsonQuery.keys) > 0 {
+					builder.WriteString(fmt.Sprintf("JSON_EXTRACT(%s, '$.%s') = ", stmt.Quote(jsonQuery.column), strings.Join(jsonQuery.keys, ".")))
+					stmt.AddVar(builder, jsonQuery.equalsValue)
+				}
 			}
 		case "postgres":
-			if len(jsonQuery.hasKeys) > 0 {
-				stmt.WriteQuoted(jsonQuery.column)
-				stmt.WriteString("::jsonb")
-				for _, key := range jsonQuery.hasKeys[0 : len(jsonQuery.hasKeys)-1] {
-					stmt.WriteString(" -> ")
-					stmt.AddVar(stmt, key)
-				}
+			switch {
+			case jsonQuery.hasKeys:
+				if len(jsonQuery.keys) > 0 {
+					stmt.WriteQuoted(jsonQuery.column)
+					stmt.WriteString("::jsonb")
+					for _, key := range jsonQuery.keys[0 : len(jsonQuery.keys)-1] {
+						stmt.WriteString(" -> ")
+						stmt.AddVar(builder, key)
+					}
 
-				stmt.WriteString(" ? ")
-				stmt.AddVar(stmt, jsonQuery.hasKeys[len(jsonQuery.hasKeys)-1])
+					stmt.WriteString(" ? ")
+					stmt.AddVar(builder, jsonQuery.keys[len(jsonQuery.keys)-1])
+				}
+			case jsonQuery.equals:
+				if len(jsonQuery.keys) > 0 {
+					builder.WriteString(fmt.Sprintf("json_extract_path_text(%v::json,", stmt.Quote(jsonQuery.column)))
+
+					for idx, key := range jsonQuery.keys {
+						if idx > 0 {
+							builder.WriteByte(',')
+						}
+						stmt.AddVar(builder, key)
+					}
+					builder.WriteString(") = ")
+
+					if _, ok := jsonQuery.equalsValue.(string); ok {
+						stmt.AddVar(builder, jsonQuery.equalsValue)
+					} else {
+						stmt.AddVar(builder, fmt.Sprint(jsonQuery.equalsValue))
+					}
+				}
 			}
 		}
 	}

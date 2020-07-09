@@ -18,6 +18,16 @@ DB.Create(&User{
 	Attributes: datatypes.JSON([]byte(`{"name": "jinzhu", "age": 18, "tags": ["tag1", "tag2"], "orgs": {"orga": "orga"}}`)),
 }
 
+// Check JSON has keys
+datatypes.JSONQuery("attributes").HasKey(value, keys...)
+
 DB.First(&user, datatypes.JSONQuery("attributes").HasKey("role"))
 DB.First(&user, datatypes.JSONQuery("attributes").HasKey("orgs", "orga"))
+
+
+// Check JSON extract value from keys equal to value
+datatypes.JSONQuery("attributes").Equals(value, keys...)
+
+DB.First(&user, datatypes.JSONQuery("attributes").Equals("jinzhu", "name"))
+DB.First(&user, datatypes.JSONQuery("attributes").Equals("orgb", "orgs", "orgb"))
 ```
