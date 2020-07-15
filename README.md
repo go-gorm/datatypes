@@ -43,3 +43,30 @@ DB.First(&user, datatypes.JSONQuery("attributes").Equals("orgb", "orgs", "orgb")
 // PostgreSQL
 // SELECT * FROM "user" WHERE json_extract_path_text("attributes"::json,'name') = 'jinzhu'
 ```
+
+## Inet / CIDR (Postgres specific)
+
+``` go
+import (
+	"net"
+	"gorm.io/datatypes"
+)
+
+type Network struct {
+	gorm.Model
+
+	Host     datatypes.Inet
+	GW       datatypes.Inet
+	Subnet   datatypes.CIDR
+}
+
+host := net.ParseIP("192.168.1.15")
+gw := net.ParseIP("192.168.1.1")
+_, subnet, _ := net.ParseCIDR("192.168.1.0/24") 
+
+DB.Create(&Network{
+	Host: datatypes.Inet{IP: host},
+	GW: datatypes.Inet{IP: gw},
+	Subnet: datatypes.CIDR{IPNet: subnet},
+}
+```
