@@ -43,3 +43,22 @@ DB.First(&user, datatypes.JSONQuery("attributes").Equals("orgb", "orgs", "orgb")
 // PostgreSQL
 // SELECT * FROM "user" WHERE json_extract_path_text("attributes"::json,'name') = 'jinzhu'
 ```
+
+## Date
+
+```go
+import "gorm.io/datatypes"
+
+type UserWithDate struct {
+	gorm.Model
+	Name string
+	Date datatypes.Date
+}
+
+user := UserWithDate{Name: "jinzhu", Date: datatypes.Date(time.Now())}
+DB.Create(&user)
+// INSERT INTO `user_with_dates` (`name`,`date`) VALUES ("jinzhu","2020-07-17 00:00:00")
+
+DB.First(&result, "name = ? AND date = ?", "jinzhu", datatypes.Date(curTime))
+// SELECT * FROM user_with_dates WHERE name = "jinzhu" AND date = "2020-07-17 00:00:00" ORDER BY `user_with_dates`.`id` LIMIT 1
+```

@@ -14,7 +14,6 @@ var _ driver.Valuer = &datatypes.JSON{}
 
 func TestJSON(t *testing.T) {
 	if SupportedDriver("mysql", "postgres") {
-		DB.Dialector.Name()
 		type UserWithJSON struct {
 			gorm.Model
 			Name       string
