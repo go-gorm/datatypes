@@ -2,7 +2,7 @@
 
 ## JSON
 
-mysql, postgres supported
+sqlite, mysql, postgres supported
 
 ```go
 import "gorm.io/datatypes"
@@ -43,6 +43,8 @@ DB.First(&user, datatypes.JSONQuery("attributes").Equals("orgb", "orgs", "orgb")
 // PostgreSQL
 // SELECT * FROM "user" WHERE json_extract_path_text("attributes"::json,'name') = 'jinzhu'
 ```
+
+NOTE: SQlite need to build with `json1` tag, e.g: `go build --tags json1`, refer https://github.com/mattn/go-sqlite3#usage
 
 ## Date
 

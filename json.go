@@ -57,6 +57,8 @@ func (JSON) GormDataType() string {
 // GormDBDataType gorm db data type
 func (JSON) GormDBDataType(db *gorm.DB, field *schema.Field) string {
 	switch db.Dialector.Name() {
+	case "sqlite":
+		return "JSON"
 	case "mysql":
 		return "JSON"
 	case "postgres":
@@ -98,7 +100,7 @@ func (jsonQuery *JSONQueryExpression) Equals(value interface{}, keys ...string) 
 func (jsonQuery *JSONQueryExpression) Build(builder clause.Builder) {
 	if stmt, ok := builder.(*gorm.Statement); ok {
 		switch stmt.Dialector.Name() {
-		case "mysql":
+		case "mysql", "sqlite":
 			switch {
 			case jsonQuery.hasKeys:
 				if len(jsonQuery.keys) > 0 {

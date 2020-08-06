@@ -13,7 +13,7 @@ import (
 var _ driver.Valuer = &datatypes.JSON{}
 
 func TestJSON(t *testing.T) {
-	if SupportedDriver("mysql", "postgres") {
+	if SupportedDriver("sqlite", "mysql", "postgres") {
 		type UserWithJSON struct {
 			gorm.Model
 			Name       string
