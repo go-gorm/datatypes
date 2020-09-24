@@ -79,5 +79,16 @@ func TestJSON(t *testing.T) {
 			t.Fatalf("failed to find user with json value, got error %v", err)
 		}
 		AssertEqual(t, result4.Name, users[1].Name)
+
+		// FirstOrCreate
+		jsonMap := map[string]interface{}{"Attributes": datatypes.JSON(`{"age":19,"name":"json-1","orgs":{"orga":"orga"},"tags":["tag1","tag2"]}`)}
+		if err := DB.Where(&UserWithJSON{Name: "json-1"}).Assign(jsonMap).FirstOrCreate(&UserWithJSON{}).Error; err != nil {
+			t.Errorf("failed to run FirstOrCreate")
+		}
+
+		var result5 UserWithJSON
+		if err := DB.First(&result5, datatypes.JSONQuery("attributes").Equals(19, "age")).Error; err != nil {
+			t.Fatalf("failed to find user with json value, got error %v", err)
+		}
 	}
 }
