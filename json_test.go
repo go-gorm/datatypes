@@ -87,8 +87,13 @@ func TestJSON(t *testing.T) {
 		}
 
 		var result5 UserWithJSON
-		if err := DB.First(&result5, datatypes.JSONQuery("attributes").Equals(19, "age")).Error; err != nil {
+		if err := DB.First(&result5, datatypes.JSONQuery("attributes").Equals(18, "age")).Error; err != nil {
 			t.Fatalf("failed to find user with json value, got error %v", err)
 		}
+		var result6 UserWithJSON
+		if err := DB.First(&result6, datatypes.JSONQuery("attributes").Contains([]interface{}{"tag1", "tag2"}, "tags")).Error; err != nil {
+			t.Fatalf("failed to find user with json value in array, got error %v", err)
+		}
+
 	}
 }

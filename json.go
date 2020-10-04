@@ -69,11 +69,13 @@ func (JSON) GormDBDataType(db *gorm.DB, field *schema.Field) string {
 
 // JSONQueryExpression json query expression, implements clause.Expression interface to use as querier
 type JSONQueryExpression struct {
-	column      string
-	keys        []string
-	hasKeys     bool
-	equals      bool
-	equalsValue interface{}
+	column          string
+	keys            []string
+	hasKeys         bool
+	equals          bool
+	contains        bool
+	equalsValue     interface{}
+	countainsValues []interface{}
 }
 
 // JSONQuery query column as json
@@ -96,6 +98,14 @@ func (jsonQuery *JSONQueryExpression) Equals(value interface{}, keys ...string) 
 	return jsonQuery
 }
 
+// Keys returns clause.Expression
+func (jsonQuery *JSONQueryExpression) Contains(values []interface{}, keys ...string) *JSONQueryExpression {
+	jsonQuery.keys = keys
+	jsonQuery.contains = true
+	jsonQuery.countainsValues = values
+	return jsonQuery
+}
+
 // Build implements clause.Expression
 func (jsonQuery *JSONQueryExpression) Build(builder clause.Builder) {
 	if stmt, ok := builder.(*gorm.Statement); ok {
@@ -111,6 +121,13 @@ func (jsonQuery *JSONQueryExpression) Build(builder clause.Builder) {
 					builder.WriteString(fmt.Sprintf("JSON_EXTRACT(%s, '$.%s') = ", stmt.Quote(jsonQuery.column), strings.Join(jsonQuery.keys, ".")))
 					stmt.AddVar(builder, jsonQuery.equalsValue)
 				}
+
+			case jsonQuery.contains:
+				if len(jsonQuery.keys) > 0 && len(jsonQuery.countainsValues) > 0 {
+					builder.WriteString(fmt.Sprintf("JSON_CONTAINS(%s, '[", stmt.Quote(jsonQuery.column)))
+					stmt.AddVar(builder, jsonQuery.countainsValues...)
+					builder.WriteString(fmt.Sprintf("]', '$.%s')", strings.Join(jsonQuery.keys, ".")))
+				}
 			}
 		case "postgres":
 			switch {
@@ -125,6 +142,20 @@ func (jsonQuery *JSONQueryExpression) Build(builder clause.Builder) {
 
 					stmt.WriteString(" ? ")
 					stmt.AddVar(builder, jsonQuery.keys[len(jsonQuery.keys)-1])
+				}
+			case jsonQuery.contains:
+				fmt.Println(jsonQuery.keys)
+				if len(jsonQuery.keys) > 0 && len(jsonQuery.countainsValues) > 0 {
+					stmt.WriteQuoted(jsonQuery.column)
+					stmt.WriteString("::jsonb")
+					for _, key := range jsonQuery.keys {
+						stmt.WriteString(" -> ")
+						stmt.AddVar(builder, key)
+					}
+					stmt.WriteString(" ?| ")
+					stmt.WriteString("ARRAY[")
+					stmt.AddVar(builder, jsonQuery.countainsValues...)
+					stmt.WriteString("]")
 				}
 			case jsonQuery.equals:
 				if len(jsonQuery.keys) > 0 {
