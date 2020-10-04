@@ -69,13 +69,13 @@ func (JSON) GormDBDataType(db *gorm.DB, field *schema.Field) string {
 
 // JSONQueryExpression json query expression, implements clause.Expression interface to use as querier
 type JSONQueryExpression struct {
-	column          string
-	keys            []string
-	hasKeys         bool
-	equals          bool
-	contains        bool
-	equalsValue     interface{}
-	countainsValues []interface{}
+	column         string
+	keys           []string
+	hasKeys        bool
+	equals         bool
+	contains       bool
+	equalsValue    interface{}
+	containsValues []interface{}
 }
 
 // JSONQuery query column as json
@@ -102,7 +102,7 @@ func (jsonQuery *JSONQueryExpression) Equals(value interface{}, keys ...string) 
 func (jsonQuery *JSONQueryExpression) Contains(values []interface{}, keys ...string) *JSONQueryExpression {
 	jsonQuery.keys = keys
 	jsonQuery.contains = true
-	jsonQuery.countainsValues = values
+	jsonQuery.containsValues = values
 	return jsonQuery
 }
 
@@ -123,9 +123,9 @@ func (jsonQuery *JSONQueryExpression) Build(builder clause.Builder) {
 				}
 
 			case jsonQuery.contains:
-				if len(jsonQuery.keys) > 0 && len(jsonQuery.countainsValues) > 0 {
+				if len(jsonQuery.keys) > 0 && len(jsonQuery.containsValues) > 0 {
 					builder.WriteString(fmt.Sprintf("JSON_CONTAINS(%s, '[", stmt.Quote(jsonQuery.column)))
-					stmt.AddVar(builder, jsonQuery.countainsValues...)
+					stmt.AddVar(builder, jsonQuery.containsValues...)
 					builder.WriteString(fmt.Sprintf("]', '$.%s')", strings.Join(jsonQuery.keys, ".")))
 				}
 			}
@@ -145,7 +145,7 @@ func (jsonQuery *JSONQueryExpression) Build(builder clause.Builder) {
 				}
 			case jsonQuery.contains:
 				fmt.Println(jsonQuery.keys)
-				if len(jsonQuery.keys) > 0 && len(jsonQuery.countainsValues) > 0 {
+				if len(jsonQuery.keys) > 0 && len(jsonQuery.containsValues) > 0 {
 					stmt.WriteQuoted(jsonQuery.column)
 					stmt.WriteString("::jsonb")
 					for _, key := range jsonQuery.keys {
@@ -154,7 +154,7 @@ func (jsonQuery *JSONQueryExpression) Build(builder clause.Builder) {
 					}
 					stmt.WriteString(" ?| ")
 					stmt.WriteString("ARRAY[")
-					stmt.AddVar(builder, jsonQuery.countainsValues...)
+					stmt.AddVar(builder, jsonQuery.containsValues...)
 					stmt.WriteString("]")
 				}
 			case jsonQuery.equals:
