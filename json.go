@@ -123,10 +123,14 @@ func (jsonQuery *JSONQueryExpression) Build(builder clause.Builder) {
 				}
 
 			case jsonQuery.contains:
-				if len(jsonQuery.keys) > 0 && len(jsonQuery.containsValues) > 0 {
+				if len(jsonQuery.containsValues) > 0 {
 					builder.WriteString(fmt.Sprintf("JSON_CONTAINS(%s, '[", stmt.Quote(jsonQuery.column)))
 					stmt.AddVar(builder, jsonQuery.containsValues...)
-					builder.WriteString(fmt.Sprintf("]', '$.%s')", strings.Join(jsonQuery.keys, ".")))
+					keys := ""
+					for _, k := range jsonQuery.keys {
+						keys += "." + k
+					}
+					builder.WriteString(fmt.Sprintf("]', '$%s')", keys))
 				}
 			}
 		case "postgres":
@@ -145,7 +149,7 @@ func (jsonQuery *JSONQueryExpression) Build(builder clause.Builder) {
 				}
 			case jsonQuery.contains:
 				fmt.Println(jsonQuery.keys)
-				if len(jsonQuery.keys) > 0 && len(jsonQuery.containsValues) > 0 {
+				if len(jsonQuery.containsValues) > 0 {
 					stmt.WriteQuoted(jsonQuery.column)
 					stmt.WriteString("::jsonb")
 					for _, key := range jsonQuery.keys {

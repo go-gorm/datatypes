@@ -95,5 +95,16 @@ func TestJSON(t *testing.T) {
 			t.Fatalf("failed to find user with json value in array, got error %v", err)
 		}
 
+		result7 := UserWithJSON{
+			Name:       "json-3",
+			Attributes: datatypes.JSON([]byte(`["tag1"]`)),
+		}
+		if err := DB.Create(&result7).Error; err != nil {
+			t.Fatalf("failed create user %v", err)
+		}
+		if err := DB.First(&result7, datatypes.JSONQuery("attributes").Contains([]interface{}{"tag1", "tag2"})).Error; err != nil {
+			t.Fatalf("failed to find user with json value in array, got error %v", err)
+		}
+
 	}
 }
