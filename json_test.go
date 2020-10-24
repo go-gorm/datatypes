@@ -1,7 +1,6 @@
 package datatypes_test
 
 import (
-	"database/sql/driver"
 	"encoding/json"
 	"testing"
 
@@ -10,7 +9,7 @@ import (
 	. "gorm.io/gorm/utils/tests"
 )
 
-var _ driver.Valuer = &datatypes.JSON{}
+// var _ driver.Valuer = &datatypes.JSON{}
 
 func TestJSON(t *testing.T) {
 	if SupportedDriver("sqlite", "mysql", "postgres") {
@@ -31,10 +30,10 @@ func TestJSON(t *testing.T) {
 
 		users := []UserWithJSON{{
 			Name:       "json-1",
-			Attributes: datatypes.JSON([]byte(user1Attrs)),
+			Attributes: datatypes.JSON(user1Attrs),
 		}, {
 			Name:       "json-2",
-			Attributes: datatypes.JSON([]byte(`{"name": "json-2", "age": 28, "tags": ["tag1", "tag3"], "role": "admin", "orgs": {"orgb": "orgb"}}`)),
+			Attributes: datatypes.JSON(`{"name": "json-2", "age": 28, "tags": ["tag1", "tag3"], "role": "admin", "orgs": {"orgb": "orgb"}}`),
 		}}
 
 		if err := DB.Create(&users).Error; err != nil {
