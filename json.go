@@ -20,13 +20,19 @@ func (j JSON) Value() (driver.Value, error) {
 	if len(j) == 0 {
 		return nil, nil
 	}
-	return json.RawMessage(j).MarshalJSON()
+	bytes, err := json.RawMessage(j).MarshalJSON()
+	return string(bytes), err
 }
 
 // Scan scan value into Jsonb, implements sql.Scanner interface
 func (j *JSON) Scan(value interface{}) error {
-	bytes, ok := value.([]byte)
-	if !ok {
+	var bytes []byte
+	switch v := value.(type) {
+	case []byte:
+		bytes = v
+	case string:
+		bytes = []byte(v)
+	default:
 		return errors.New(fmt.Sprint("Failed to unmarshal JSONB value:", value))
 	}
 
