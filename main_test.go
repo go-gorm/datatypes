@@ -25,20 +25,24 @@ func init() {
 
 func OpenTestConnection() (db *gorm.DB, err error) {
 	dbDSN := os.Getenv("GORM_DSN")
-	switch os.Getenv("GORM_DIALECT") {
+	dialect := os.Getenv("GORM_DIALECT")
+	switch dialect {
 	case "mysql":
 		log.Println("testing mysql...")
 		if dbDSN == "" {
 			dbDSN = "gorm:gorm@tcp(localhost:9910)/gorm?charset=utf8&parseTime=True&loc=UTC"
 		}
 		db, err = gorm.Open(mysql.Open(dbDSN), &gorm.Config{})
-	case "postgres":
-		log.Println("testing postgres...")
+	case "postgres", "postgres_simple":
+		log.Printf("testing %v...", dialect)
 		if dbDSN == "" {
 			dbDSN = "user=gorm password=gorm dbname=gorm port=9920 sslmode=disable TimeZone=Asia/Shanghai"
 		}
-		db, err = gorm.Open(postgres.Open(dbDSN), &gorm.Config{})
-		// db, err = gorm.Open(postgres.New(postgres.Config{DSN: dbDSN, PreferSimpleProtocol: true}), &gorm.Config{})
+		if dialect == "postgres" {
+			db, err = gorm.Open(postgres.Open(dbDSN), &gorm.Config{})
+		} else {
+			db, err = gorm.Open(postgres.New(postgres.Config{DSN: dbDSN, PreferSimpleProtocol: true}), &gorm.Config{})
+		}
 	case "sqlserver":
 		// CREATE LOGIN gorm WITH PASSWORD = 'LoremIpsum86';
 		// CREATE DATABASE gorm;
