@@ -8,5 +8,5 @@ require (
 	gorm.io/driver/postgres v0.2.6
 	gorm.io/driver/sqlite v1.0.8
 	gorm.io/driver/sqlserver v0.2.5
-	gorm.io/gorm v0.2.27
+	gorm.io/gorm v0.2.38
 )
