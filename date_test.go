@@ -1,6 +1,8 @@
 package datatypes_test
 
 import (
+	"bytes"
+	"encoding/gob"
 	"testing"
 	"time"
 
@@ -33,4 +35,21 @@ func TestDate(t *testing.T) {
 	}
 
 	AssertEqual(t, result.Date, beginningOfDay)
+}
+
+func TestGobEncoding(t *testing.T) {
+	date := datatypes.Date(time.Now())
+	var buf bytes.Buffer
+	enc := gob.NewEncoder(&buf)
+	if err := enc.Encode(date); err != nil {
+		t.Fatalf("failed to encode datatypes.Date: %v", err)
+	}
+
+	dec := gob.NewDecoder(&buf)
+	var got datatypes.Date
+	if err := dec.Decode(&got); err != nil {
+		t.Fatalf("failed to decode to datatypes.Date: %v", err)
+	}
+
+	AssertEqual(t, date, got)
 }
