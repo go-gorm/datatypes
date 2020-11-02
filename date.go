@@ -24,3 +24,19 @@ func (date Date) Value() (driver.Value, error) {
 func (date Date) GormDataType() string {
 	return "date"
 }
+
+func (date Date) GobEncode() ([]byte, error) {
+	return time.Time(date).GobEncode()
+}
+
+func (date *Date) GobDecode(b []byte) error {
+	return (*time.Time)(date).GobDecode(b)
+}
+
+func (date Date) MarshalJSON() ([]byte, error) {
+	return time.Time(date).MarshalJSON()
+}
+
+func (date *Date) UnmarshalJSON(b []byte) error {
+	return (*time.Time)(date).UnmarshalJSON(b)
+}
