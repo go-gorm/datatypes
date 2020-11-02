@@ -32,3 +32,11 @@ func (date Date) GobEncode() ([]byte, error) {
 func (date *Date) GobDecode(b []byte) error {
 	return (*time.Time)(date).GobDecode(b)
 }
+
+func (date Date) MarshalJSON() ([]byte, error) {
+	return time.Time(date).MarshalJSON()
+}
+
+func (date *Date) UnmarshalJSON(b []byte) error {
+	return (*time.Time)(date).UnmarshalJSON(b)
+}
