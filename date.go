@@ -6,37 +6,26 @@ import (
 	"time"
 )
 
-type Date time.Time
+// Date defiend Date data type, need to implements driver.Valuer, sql.Scanner interface
+type Date struct {
+	time.Time
+}
 
+// Value return date value, implement driver.Valuer interface
+func (date Date) Value() (driver.Value, error) {
+	y, m, d := date.Date()
+	return time.Date(y, m, d, 0, 0, 0, 0, date.Location()), nil
+}
+
+// Scan scan value into time.Time, implements sql.Scanner interface
 func (date *Date) Scan(value interface{}) (err error) {
 	nullTime := &sql.NullTime{}
 	err = nullTime.Scan(value)
-	*date = Date(nullTime.Time)
+	*date = Date{nullTime.Time}
 	return
-}
-
-func (date Date) Value() (driver.Value, error) {
-	y, m, d := time.Time(date).Date()
-	return time.Date(y, m, d, 0, 0, 0, 0, time.Time(date).Location()), nil
 }
 
 // GormDataType gorm common data type
 func (date Date) GormDataType() string {
 	return "date"
-}
-
-func (date Date) GobEncode() ([]byte, error) {
-	return time.Time(date).GobEncode()
-}
-
-func (date *Date) GobDecode(b []byte) error {
-	return (*time.Time)(date).GobDecode(b)
-}
-
-func (date Date) MarshalJSON() ([]byte, error) {
-	return time.Time(date).MarshalJSON()
-}
-
-func (date *Date) UnmarshalJSON(b []byte) error {
-	return (*time.Time)(date).UnmarshalJSON(b)
 }

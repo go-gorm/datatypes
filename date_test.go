@@ -27,11 +27,11 @@ func TestDate(t *testing.T) {
 	curTime := time.Now().UTC()
 	beginningOfDay := now.New(curTime).BeginningOfDay()
 
-	user := UserWithDate{Name: "jinzhu", Date: datatypes.Date(curTime)}
+	user := UserWithDate{Name: "jinzhu", Date: datatypes.Date{curTime}}
 	DB.Create(&user)
 
 	result := UserWithDate{}
-	if err := DB.First(&result, "name = ? AND date = ?", "jinzhu", datatypes.Date(curTime)).Error; err != nil {
+	if err := DB.First(&result, "name = ? AND date = ?", "jinzhu", datatypes.Date{curTime}).Error; err != nil {
 		t.Fatalf("Failed to find record with date")
 	}
 
@@ -39,7 +39,7 @@ func TestDate(t *testing.T) {
 }
 
 func TestGobEncoding(t *testing.T) {
-	date := datatypes.Date(time.Now())
+	date := datatypes.Date{time.Now()}
 	var buf bytes.Buffer
 	enc := gob.NewEncoder(&buf)
 	if err := enc.Encode(date); err != nil {
@@ -56,7 +56,7 @@ func TestGobEncoding(t *testing.T) {
 }
 
 func TestJSONEncoding(t *testing.T) {
-	date := datatypes.Date(time.Now())
+	date := datatypes.Date{time.Now()}
 	b, err := json.Marshal(date)
 	if err != nil {
 		t.Fatalf("failed to encode datatypes.Date: %v", err)
