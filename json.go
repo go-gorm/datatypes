@@ -98,7 +98,7 @@ func (jsonQuery *JSONQueryExpression) HasKey(keys ...string) *JSONQueryExpressio
 	return jsonQuery
 }
 
-// Keys returns clause.Expression
+// Equals Keys returns clause.Expression
 func (jsonQuery *JSONQueryExpression) Equals(value interface{}, keys ...string) *JSONQueryExpression {
 	jsonQuery.keys = keys
 	jsonQuery.equals = true
