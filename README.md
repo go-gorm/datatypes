@@ -39,9 +39,11 @@ DB.First(&user, datatypes.JSONQuery("attributes").Equals("jinzhu", "name"))
 DB.First(&user, datatypes.JSONQuery("attributes").Equals("orgb", "orgs", "orgb"))
 // MySQL
 // SELECT * FROM `user` WHERE JSON_EXTRACT(`attributes`, '$.name') = "jinzhu"
+// SELECT * FROM `user` WHERE JSON_EXTRACT(`attributes`, '$.orgs.orgb') = "orgb"
 
 // PostgreSQL
 // SELECT * FROM "user" WHERE json_extract_path_text("attributes"::json,'name') = 'jinzhu'
+// SELECT * FROM "user" WHERE json_extract_path_text("attributes"::json,'orgs','orgb') = 'orgb'
 ```
 
 NOTE: SQlite need to build with `json1` tag, e.g: `go build --tags json1`, refer https://github.com/mattn/go-sqlite3#usage
