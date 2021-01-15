@@ -54,7 +54,12 @@ func TestJSONMap(t *testing.T) {
 		}, {
 			Name:       "json-2",
 			Attributes: datatypes.JSONMap(user2Attrs),
-		}}
+		},
+			{
+				Name:       "json-3",
+				Attributes: datatypes.JSONMap{},
+			},
+		}
 
 		if err := DB.Create(&users).Error; err != nil {
 			t.Errorf("Failed to create users %v", err)
@@ -72,8 +77,7 @@ func TestJSONMap(t *testing.T) {
 		}
 		AssertEqual(t, result2.Name, users[0].Name)
 
-		//https://tip.golang.org/doc/go1.12#fmt
-		AssertEqual(t, fmt.Sprint(result2.Attributes), fmt.Sprint(user1Attrs))
+		AssertEqual(t, result2.Attributes, user1Attrs)
 
 		// attributes should not marshal to base64 encoded []byte
 		result2Attrs, err := json.Marshal(result2.Attributes)
@@ -113,5 +117,54 @@ func TestJSONMap(t *testing.T) {
 		if err := DB.First(&result5, datatypes.JSONQuery("attributes").Equals(19, "age")).Error; err != nil {
 			t.Fatalf("failed to find user with json value, got error %v", err)
 		}
+
+		var result6 UserWithJSONMap
+		if err := DB.Where("name = ?", "json-3").First(&result6).Error; err != nil {
+			t.Fatalf("failed to find user with json value, got error %v", err)
+		}
+
+		AssertEqual(t, result6.Attributes, datatypes.JSONMap{})
+
+		type UserWithJSONMapPtr struct {
+			gorm.Model
+			Name       string
+			Attributes *datatypes.JSONMap
+		}
+
+		DB.Migrator().DropTable(&UserWithJSONMapPtr{})
+		if err := DB.Migrator().AutoMigrate(&UserWithJSONMapPtr{}); err != nil {
+			t.Errorf("failed to migrate, got error: %v", err)
+		}
+
+		jm1 := datatypes.JSONMap(user1Attrs)
+
+		ujmps := []*UserWithJSONMapPtr{
+			{
+				Name:       "json-4",
+				Attributes: &jm1,
+			},
+			{
+				Name: "json-5",
+			},
+		}
+
+		if err := DB.Create(&ujmps).Error; err != nil {
+			t.Errorf("Failed to create users %v", err)
+		}
+
+		var result7 UserWithJSONMapPtr
+		if err := DB.Where("name = ?", "json-4").First(&result7).Error; err != nil {
+			t.Fatalf("failed to find user with json value, got error %v", err)
+		}
+
+		AssertEqual(t, *result7.Attributes, jm1)
+
+		var result8 UserWithJSONMapPtr
+		if err := DB.Where("name = ?", "json-5").First(&result8).Error; err != nil {
+			t.Fatalf("failed to find user with json value, got error %v", err)
+		}
+
+		AssertEqual(t, result8.Attributes, nil)
+
 	}
 }
