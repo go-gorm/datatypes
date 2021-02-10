@@ -12,7 +12,7 @@ import (
 	"gorm.io/gorm/schema"
 )
 
-// JSON defiend JSON data type, need to implements driver.Valuer, sql.Scanner interface
+// JSON defined JSON data type, need to implements driver.Valuer, sql.Scanner interface
 type JSON json.RawMessage
 
 // Value return json value, implement driver.Valuer interface
