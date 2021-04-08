@@ -90,5 +90,16 @@ func TestJSON(t *testing.T) {
 		if err := DB.First(&result5, datatypes.JSONQuery("attributes").Equals(19, "age")).Error; err != nil {
 			t.Fatalf("failed to find user with json value, got error %v", err)
 		}
+
+		// Update
+		jsonMap = map[string]interface{}{"Attributes": datatypes.JSON(`{"age":29,"name":"json-1","orgs":{"orga":"orga"},"tags":["tag1","tag2"]}`)}
+		if err := DB.Model(&result3).Updates(jsonMap).Error; err != nil {
+			t.Errorf("failed to run FirstOrCreate")
+		}
+
+		var result6 UserWithJSON
+		if err := DB.First(&result6, datatypes.JSONQuery("attributes").Equals(29, "age")).Error; err != nil {
+			t.Fatalf("failed to find user with json value, got error %v", err)
+		}
 	}
 }
