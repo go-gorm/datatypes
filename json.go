@@ -26,6 +26,10 @@ func (j JSON) Value() (driver.Value, error) {
 
 // Scan scan value into Jsonb, implements sql.Scanner interface
 func (j *JSON) Scan(value interface{}) error {
+	if value == nil {
+		*j = JSON("null")
+		return nil
+	}
 	var bytes []byte
 	switch v := value.(type) {
 	case []byte:
