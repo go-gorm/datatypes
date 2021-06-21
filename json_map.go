@@ -24,6 +24,10 @@ func (m JSONMap) Value() (driver.Value, error) {
 
 // Scan scan value into Jsonb, implements sql.Scanner interface
 func (m *JSONMap) Scan(val interface{}) error {
+	if val == nil {
+		*m = make(JSONMap)
+		return nil
+	}
 	var ba []byte
 	switch v := val.(type) {
 	case []byte:
