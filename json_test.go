@@ -27,7 +27,7 @@ func TestJSON(t *testing.T) {
 
 		// Go's json marshaler removes whitespace & orders keys alphabetically
 		// use to compare against marshaled []byte of datatypes.JSON
-		user1Attrs := `{"age":18,"name":"json-1","orgs":{"orga":"orga"},"tags":["tag1","tag2"]}`
+		user1Attrs := `{"age":18,"name":"json-1","orgs":{"orga":"orga"},"tags":["tag1","tag2"],"admin":true}`
 
 		users := []UserWithJSON{{
 			Name:       "json-1",
@@ -81,7 +81,7 @@ func TestJSON(t *testing.T) {
 		AssertEqual(t, result4.Name, users[1].Name)
 
 		var results5 []UserWithJSON
-		if err := DB.Where(datatypes.JSONQuery("attributes").HasKey("age")).Where(datatypes.JSONQuery("attributes").Equals("json-1", "name")).Find(&results5).Error; err != nil || len(results5) != 1 {
+		if err := DB.Where(datatypes.JSONQuery("attributes").HasKey("age")).Where(datatypes.JSONQuery("attributes").Equals(true, "admin")).Find(&results5).Error; err != nil || len(results5) != 1 {
 			t.Fatalf("failed to find user with json value, got error %v", err)
 		}
 		AssertEqual(t, results5[0].Name, users[0].Name)
