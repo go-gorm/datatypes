@@ -193,8 +193,8 @@ gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c h1:dUUwHk2QECo/6vqA44rthZ8ie
 gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c/go.mod h1:K4uyk7z7BCEPqu6E+C64Yfv1cQ7kz7rIZviUmN+EgEM=
 gorm.io/driver/mysql v1.1.3 h1:+5g1UElqN0sr2gZqmg9djlu1zT3cErHiscc6+IbLHgw=
 gorm.io/driver/mysql v1.1.3/go.mod h1:4P/X9vSc3WTrhTLZ259cpFd6xKNYiSSdSZngkSBGIMM=
-gorm.io/driver/postgres v1.2.1 h1:JDQKnF7MC51dgL09Vbydc5kl83KkVDlcXfSPJ+xhh68=
-gorm.io/driver/postgres v1.2.1/go.mod h1:SHRZhu+D0tLOHV5qbxZRUM6kBcf3jp/kxPz2mYMTsNY=
+gorm.io/driver/postgres v1.2.2 h1:Ka9W6feOU+rPM9m007eYLMD4QoZuYGBnQ3Jp0faGSwg=
+gorm.io/driver/postgres v1.2.2/go.mod h1:Ik3tK+a3FMp8ORZl29v4b3M0RsgXsaeMXh9s9eVMXco=
 gorm.io/driver/sqlite v1.2.3 h1:OwKm0xRAnsZMWAl5BtXJ9BsXAZHIt802DOTVMQuzWN8=
 gorm.io/driver/sqlite v1.2.3/go.mod h1:wkiGvZF3le/8vjCRYg0bT8TSw6APZ5rtgKW8uQYE3sc=
 gorm.io/driver/sqlserver v1.2.0 h1:5cPirBlvocwzzJ6SDqjkHraKfwnKn5I6Ss/WTMtI+io=
