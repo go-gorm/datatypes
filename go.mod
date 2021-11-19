@@ -3,7 +3,7 @@ module gorm.io/datatypes
 go 1.14
 
 require (
-	github.com/jinzhu/now v1.1.2
+	github.com/jinzhu/now v1.1.3
 	gorm.io/driver/mysql v1.1.3
 	gorm.io/driver/postgres v1.2.2
 	gorm.io/driver/sqlite v1.2.3
