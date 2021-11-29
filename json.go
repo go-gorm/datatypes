@@ -1,6 +1,7 @@
 package datatypes
 
 import (
+	"context"
 	"database/sql/driver"
 	"encoding/json"
 	"errors"
@@ -79,6 +80,16 @@ func (JSON) GormDBDataType(db *gorm.DB, field *schema.Field) string {
 		return "JSONB"
 	}
 	return ""
+}
+
+func (js JSON) GormValue(ctx context.Context, db *gorm.DB) clause.Expr {
+	data, _ := js.MarshalJSON()
+	switch db.Dialector.Name() {
+	case "mysql":
+		return gorm.Expr("CAST(? AS JSON)", string(data))
+	default:
+		return gorm.Expr("?", string(data))
+	}
 }
 
 // JSONQueryExpression json query expression, implements clause.Expression interface to use as querier

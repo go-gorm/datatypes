@@ -166,5 +166,9 @@ func TestJSONMap(t *testing.T) {
 
 		AssertEqual(t, result8.Attributes, nil)
 
+		var result9 UserWithJSONMapPtr
+		if err := DB.Where(result8, "Attributes").First(&result9).Error; err != nil {
+			t.Fatalf("failed to find user with json value, got error %v", err)
+		}
 	}
 }

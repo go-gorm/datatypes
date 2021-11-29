@@ -1,12 +1,14 @@
 package datatypes
 
 import (
+	"context"
 	"database/sql/driver"
 	"encoding/json"
 	"errors"
 	"fmt"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 	"gorm.io/gorm/schema"
 )
 
@@ -74,6 +76,18 @@ func (JSONMap) GormDBDataType(db *gorm.DB, field *schema.Field) string {
 		return "JSON"
 	case "postgres":
 		return "JSONB"
+	case "sqlserver":
+		return "NVARCHAR(MAX)"
 	}
 	return ""
+}
+
+func (jm JSONMap) GormValue(ctx context.Context, db *gorm.DB) clause.Expr {
+	data, _ := jm.MarshalJSON()
+	switch db.Dialector.Name() {
+	case "mysql":
+		return gorm.Expr("CAST(? AS JSON)", string(data))
+	default:
+		return gorm.Expr("?", string(data))
+	}
 }
