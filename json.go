@@ -84,13 +84,19 @@ func (JSON) GormDBDataType(db *gorm.DB, field *schema.Field) string {
 }
 
 func (js JSON) GormValue(ctx context.Context, db *gorm.DB) clause.Expr {
+	if len(js) == 0 {
+		return gorm.Expr("NULL")
+	}
+
 	data, _ := js.MarshalJSON()
+
 	switch db.Dialector.Name() {
 	case "mysql":
 		if v, ok := db.Dialector.(*mysql.Dialector); ok && !strings.Contains(v.ServerVersion, "MariaDB") {
 			return gorm.Expr("CAST(? AS JSON)", string(data))
 		}
 	}
+
 	return gorm.Expr("?", string(data))
 }
 

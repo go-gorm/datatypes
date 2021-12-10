@@ -43,7 +43,7 @@ func (m *JSONMap) Scan(val interface{}) error {
 	}
 	t := map[string]interface{}{}
 	err := json.Unmarshal(ba, &t)
-	*m = JSONMap(t)
+	*m = t
 	return err
 }
 
