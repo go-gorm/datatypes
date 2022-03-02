@@ -1,7 +1,6 @@
 package datatypes_test
 
 import (
-	"fmt"
 	"testing"
 
 	"gorm.io/datatypes"
@@ -29,7 +28,6 @@ func TestTime(t *testing.T) {
 			t.Fatalf("failed to find record with time, got error: %v", err)
 		}
 
-		fmt.Println(result)
 		AssertEqual(t, result.Time, datatypes.NewTime(1, 2, 3, 0))
 	}
 }
