@@ -189,3 +189,30 @@ func (jsonQuery *JSONQueryExpression) Build(builder clause.Builder) {
 		}
 	}
 }
+
+// JSONOverlapsExpression JSON_OVERLAPS expression, implements clause.Expression interface to use as querier
+type JSONOverlapsExpression struct {
+	column string
+	val    string
+}
+
+// JSONOverlaps query column as json
+func JSONOverlaps(column, value string) *JSONOverlapsExpression {
+	return &JSONOverlapsExpression{
+		column: column,
+		val:    value,
+	}
+}
+
+// Build implements clause.Expression
+// only mysql support JSON_OVERLAPS
+func (json *JSONOverlapsExpression) Build(builder clause.Builder) {
+	if stmt, ok := builder.(*gorm.Statement); ok {
+		switch stmt.Dialector.Name() {
+		case "mysql":
+			builder.WriteString("JSON_OVERLAPS(" + stmt.Quote(json.column) + ",")
+			builder.AddVar(stmt, json.val)
+			builder.WriteString(")")
+		}
+	}
+}
