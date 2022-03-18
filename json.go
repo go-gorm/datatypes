@@ -22,8 +22,7 @@ func (j JSON) Value() (driver.Value, error) {
 	if len(j) == 0 {
 		return nil, nil
 	}
-	bytes, err := json.RawMessage(j).MarshalJSON()
-	return string(bytes), err
+	return string(j), err
 }
 
 // Scan scan value into Jsonb, implements sql.Scanner interface
