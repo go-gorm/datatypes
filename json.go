@@ -137,13 +137,17 @@ func (jsonQuery *JSONQueryExpression) Build(builder clause.Builder) {
 			switch {
 			case jsonQuery.hasKeys:
 				if len(jsonQuery.keys) > 0 {
-					builder.WriteString("JSON_EXTRACT(" + stmt.Quote(jsonQuery.column) + ",")
+					builder.WriteString("JSON_EXTRACT(")
+					builder.WriteQuoted(jsonQuery.column)
+					builder.WriteByte(',')
 					builder.AddVar(stmt, "$."+strings.Join(jsonQuery.keys, "."))
 					builder.WriteString(") IS NOT NULL")
 				}
 			case jsonQuery.equals:
 				if len(jsonQuery.keys) > 0 {
-					builder.WriteString("JSON_EXTRACT(" + stmt.Quote(jsonQuery.column) + ",")
+					builder.WriteString("JSON_EXTRACT(")
+					builder.WriteQuoted(jsonQuery.column)
+					builder.WriteByte(',')
 					builder.AddVar(stmt, "$."+strings.Join(jsonQuery.keys, "."))
 					builder.WriteString(") = ")
 					if _, ok := jsonQuery.equalsValue.(bool); ok {
