@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"gorm.io/driver/mysql"
@@ -146,8 +147,8 @@ func (jsonQuery *JSONQueryExpression) Build(builder clause.Builder) {
 					builder.WriteString("JSON_EXTRACT(" + stmt.Quote(jsonQuery.column) + ",")
 					builder.AddVar(stmt, "$."+strings.Join(jsonQuery.keys, "."))
 					builder.WriteString(") = ")
-					if _, ok := jsonQuery.equalsValue.(bool); ok {
-						builder.WriteString(fmt.Sprint(jsonQuery.equalsValue))
+					if value, ok := jsonQuery.equalsValue.(bool); ok {
+						builder.WriteString(strconv.FormatBool(value))
 					} else {
 						stmt.AddVar(builder, jsonQuery.equalsValue)
 					}
