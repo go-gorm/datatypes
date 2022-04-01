@@ -197,24 +197,24 @@ func (jsonQuery *JSONQueryExpression) Build(builder clause.Builder) {
 
 const prefix = "$."
 
-func jsonQueryJoin(vars []string) string {
-	if len(vars) == 1 {
-		return prefix + vars[0]
+func jsonQueryJoin(keys []string) string {
+	if len(keys) == 1 {
+		return prefix + keys[0]
 	}
 
 	n := len(prefix)
-	n += len(vars) - 1
-	for i := 0; i < len(vars); i++ {
-		n += len(vars[i])
+	n += len(keys) - 1
+	for i := 0; i < len(keys); i++ {
+		n += len(keys[i])
 	}
 
 	var b strings.Builder
 	b.Grow(n)
 	b.WriteString(prefix)
-	b.WriteString(vars[0])
-	for _, s := range vars[1:] {
+	b.WriteString(keys[0])
+	for _, key := range keys[1:] {
 		b.WriteString(".")
-		b.WriteString(s)
+		b.WriteString(key)
 	}
 	return b.String()
 }
