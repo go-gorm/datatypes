@@ -102,7 +102,7 @@ func (js JSON) GormValue(ctx context.Context, db *gorm.DB) clause.Expr {
 
 // JSONQueryExpression json query expression, implements clause.Expression interface to use as querier
 type JSONQueryExpression struct {
-	column      string
+	column      interface{}
 	keys        []string
 	hasKeys     bool
 	equals      bool
@@ -110,7 +110,7 @@ type JSONQueryExpression struct {
 }
 
 // JSONQuery query column as json
-func JSONQuery(column string) *JSONQueryExpression {
+func JSONQuery(column interface{}) *JSONQueryExpression {
 	return &JSONQueryExpression{column: column}
 }
 
