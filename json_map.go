@@ -14,7 +14,7 @@ import (
 	"gorm.io/gorm/schema"
 )
 
-// JSONMap defiend JSON data type, need to implements driver.Valuer, sql.Scanner interface
+// JSONMap defined JSON data type, need to implements driver.Valuer, sql.Scanner interface
 type JSONMap map[string]interface{}
 
 // Value return json value, implement driver.Valuer interface
