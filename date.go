@@ -12,6 +12,7 @@ func (date *Date) Scan(value interface{}) (err error) {
 	nullTime := &sql.NullTime{}
 	err = nullTime.Scan(value)
 	*date = Date(nullTime.Time)
+
 	return
 }
 
