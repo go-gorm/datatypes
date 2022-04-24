@@ -140,7 +140,7 @@ func (jsonQuery *JSONQueryExpression) Build(builder clause.Builder) {
 					builder.WriteString("JSON_EXTRACT(")
 					builder.WriteQuoted(jsonQuery.column)
 					builder.WriteByte(',')
-					builder.AddVar(stmt, "$."+strings.Join(jsonQuery.keys, "."))
+					builder.AddVar(stmt, jsonQueryJoin(jsonQuery.keys))
 					builder.WriteString(") IS NOT NULL")
 				}
 			case jsonQuery.equals:
@@ -148,7 +148,7 @@ func (jsonQuery *JSONQueryExpression) Build(builder clause.Builder) {
 					builder.WriteString("JSON_EXTRACT(")
 					builder.WriteQuoted(jsonQuery.column)
 					builder.WriteByte(',')
-					builder.AddVar(stmt, "$."+strings.Join(jsonQuery.keys, "."))
+					builder.AddVar(stmt, jsonQueryJoin(jsonQuery.keys))
 					builder.WriteString(") = ")
 					if value, ok := jsonQuery.equalsValue.(bool); ok {
 						builder.WriteString(strconv.FormatBool(value))
@@ -192,4 +192,29 @@ func (jsonQuery *JSONQueryExpression) Build(builder clause.Builder) {
 			}
 		}
 	}
+}
+
+
+const prefix = "$."
+
+func jsonQueryJoin(keys []string) string {
+	if len(keys) == 1 {
+		return prefix + keys[0]
+	}
+
+	n := len(prefix)
+	n += len(keys) - 1
+	for i := 0; i < len(keys); i++ {
+		n += len(keys[i])
+	}
+
+	var b strings.Builder
+	b.Grow(n)
+	b.WriteString(prefix)
+	b.WriteString(keys[0])
+	for _, key := range keys[1:] {
+		b.WriteString(".")
+		b.WriteString(key)
+	}
+	return b.String()
 }
