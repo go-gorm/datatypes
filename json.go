@@ -42,10 +42,9 @@ func (j *JSON) Scan(value interface{}) error {
 		return errors.New(fmt.Sprint("Failed to unmarshal JSONB value:", value))
 	}
 
-	result := json.RawMessage{}
-	err := json.Unmarshal(bytes, &result)
+	result := json.RawMessage(bytes)
 	*j = JSON(result)
-	return err
+	return nil
 }
 
 // MarshalJSON to output non base64 encoded []byte
@@ -193,7 +192,6 @@ func (jsonQuery *JSONQueryExpression) Build(builder clause.Builder) {
 		}
 	}
 }
-
 
 const prefix = "$."
 
