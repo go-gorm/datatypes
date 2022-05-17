@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"gorm.io/driver/mysql"
@@ -22,8 +23,7 @@ func (j JSON) Value() (driver.Value, error) {
 	if len(j) == 0 {
 		return nil, nil
 	}
-	bytes, err := json.RawMessage(j).MarshalJSON()
-	return string(bytes), err
+	return string(j), nil
 }
 
 // Scan scan value into Jsonb, implements sql.Scanner interface
@@ -137,17 +137,21 @@ func (jsonQuery *JSONQueryExpression) Build(builder clause.Builder) {
 			switch {
 			case jsonQuery.hasKeys:
 				if len(jsonQuery.keys) > 0 {
-					builder.WriteString("JSON_EXTRACT(" + stmt.Quote(jsonQuery.column) + ",")
-					builder.AddVar(stmt, "$."+strings.Join(jsonQuery.keys, "."))
+					builder.WriteString("JSON_EXTRACT(")
+					builder.WriteQuoted(jsonQuery.column)
+					builder.WriteByte(',')
+					builder.AddVar(stmt, jsonQueryJoin(jsonQuery.keys))
 					builder.WriteString(") IS NOT NULL")
 				}
 			case jsonQuery.equals:
 				if len(jsonQuery.keys) > 0 {
-					builder.WriteString("JSON_EXTRACT(" + stmt.Quote(jsonQuery.column) + ",")
-					builder.AddVar(stmt, "$."+strings.Join(jsonQuery.keys, "."))
+					builder.WriteString("JSON_EXTRACT(")
+					builder.WriteQuoted(jsonQuery.column)
+					builder.WriteByte(',')
+					builder.AddVar(stmt, jsonQueryJoin(jsonQuery.keys))
 					builder.WriteString(") = ")
-					if _, ok := jsonQuery.equalsValue.(bool); ok {
-						builder.WriteString(fmt.Sprint(jsonQuery.equalsValue))
+					if value, ok := jsonQuery.equalsValue.(bool); ok {
+						builder.WriteString(strconv.FormatBool(value))
 					} else {
 						stmt.AddVar(builder, jsonQuery.equalsValue)
 					}
@@ -215,4 +219,28 @@ func (json *JSONOverlapsExpression) Build(builder clause.Builder) {
 			builder.WriteString(")")
 		}
 	}
+}
+
+const prefix = "$."
+
+func jsonQueryJoin(keys []string) string {
+	if len(keys) == 1 {
+		return prefix + keys[0]
+	}
+
+	n := len(prefix)
+	n += len(keys) - 1
+	for i := 0; i < len(keys); i++ {
+		n += len(keys[i])
+	}
+
+	var b strings.Builder
+	b.Grow(n)
+	b.WriteString(prefix)
+	b.WriteString(keys[0])
+	for _, key := range keys[1:] {
+		b.WriteString(".")
+		b.WriteString(key)
+	}
+	return b.String()
 }

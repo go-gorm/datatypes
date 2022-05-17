@@ -13,7 +13,7 @@ jobs:
   sqlite:
     strategy:
       matrix:
-        go: ['1.16', '1.17']
+        go: ['1.16', '1.17', '1.18']
         platform: [ubuntu-latest, macos-latest] # can not run in windows OS
     runs-on: ${{ matrix.platform }}
 
@@ -24,10 +24,10 @@ jobs:
         go-version: ${{ matrix.go }}
 
     - name: Check out code into the Go module directory
-      uses: actions/checkout@v2.4.0
+      uses: actions/checkout@v3
 
     - name: go mod pakcage cache
-      uses: actions/cache@v2.1.6
+      uses: actions/cache@v3
       with:
         path: ~/go/pkg/mod
         key: ${{ runner.os }}-go-${{ matrix.go }}-${{ hashFiles('tests/go.mod') }}
@@ -39,7 +39,7 @@ jobs:
     strategy:
       matrix:
         dbversion: ['mysql:latest', 'mysql:5.7', 'mariadb:latest']
-        go: ['1.16', '1.17']
+        go: ['1.16', '1.17', '1.18']
         platform: [ubuntu-latest]
     runs-on: ${{ matrix.platform }}
 
@@ -67,11 +67,11 @@ jobs:
         go-version: ${{ matrix.go }}
 
     - name: Check out code into the Go module directory
-      uses: actions/checkout@v2.4.0
+      uses: actions/checkout@v3
 
 
     - name: go mod pakcage cache
-      uses: actions/cache@v2.1.6
+      uses: actions/cache@v3
       with:
         path: ~/go/pkg/mod
         key: ${{ runner.os }}-go-${{ matrix.go }}-${{ hashFiles('tests/go.mod') }}
@@ -83,7 +83,7 @@ jobs:
     strategy:
       matrix:
         dbversion: ['postgres:latest', 'postgres:11', 'postgres:10']
-        go: ['1.16', '1.17']
+        go: ['1.16', '1.17', '1.18']
         platform: [ubuntu-latest] # can not run in macOS and widnowsOS
     runs-on: ${{ matrix.platform }}
 
@@ -111,10 +111,10 @@ jobs:
         go-version: ${{ matrix.go }}
 
     - name: Check out code into the Go module directory
-      uses: actions/checkout@v2.4.0
+      uses: actions/checkout@v3
 
     - name: go mod pakcage cache
-      uses: actions/cache@v2.1.6
+      uses: actions/cache@v3
       with:
         path: ~/go/pkg/mod
         key: ${{ runner.os }}-go-${{ matrix.go }}-${{ hashFiles('tests/go.mod') }}
@@ -125,7 +125,7 @@ jobs:
   sqlserver:
     strategy:
       matrix:
-        go: ['1.16', '1.17']
+        go: ['1.16', '1.17', '1.18']
         platform: [ubuntu-latest] # can not run test in macOS and windows
     runs-on: ${{ matrix.platform }}
 
@@ -154,10 +154,10 @@ jobs:
         go-version: ${{ matrix.go }}
 
     - name: Check out code into the Go module directory
-      uses: actions/checkout@v2.4.0
+      uses: actions/checkout@v3
 
     - name: go mod pakcage cache
-      uses: actions/cache@v2.1.6
+      uses: actions/cache@v3
       with:
         path: ~/go/pkg/mod
         key: ${{ runner.os }}-go-${{ matrix.go }}-${{ hashFiles('tests/go.mod') }}
