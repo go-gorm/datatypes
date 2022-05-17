@@ -35,6 +35,9 @@ func TestJSON(t *testing.T) {
 		}, {
 			Name:       "json-2",
 			Attributes: datatypes.JSON([]byte(`{"name": "json-2", "age": 28, "tags": ["tag1", "tag3"], "role": "admin", "orgs": {"orgb": "orgb"}}`)),
+		}, {
+			Name:       "json-3",
+			Attributes: datatypes.JSON([]byte(`["tag1","tag2","tag3"]`)),
 		}}
 
 		if err := DB.Create(&users).Error; err != nil {
@@ -112,5 +115,12 @@ func TestJSON(t *testing.T) {
 		if err := DB.Where(result7, "Attributes").First(&result8).Error; err != nil {
 			t.Fatalf("failed to find user with json value, got error %v", err)
 		}
+
+		// not support for sqlite
+		// JSONOverlaps
+		//var result9 UserWithJSON
+		//if err := DB.First(&result9, datatypes.JSONOverlaps("attributes", `["tag1","tag2"]`)).Error; err != nil {
+		//	t.Fatalf("failed to find user with json value, got error %v", err)
+		//}
 	}
 }
