@@ -124,3 +124,56 @@ func TestJSON(t *testing.T) {
 		//}
 	}
 }
+
+func TestJSONSliceScan(t *testing.T) {
+	if SupportedDriver("sqlite", "mysql", "postgres") {
+		type Param struct {
+			ID          int
+			DisplayName string
+			Config      datatypes.JSON
+		}
+
+		DB.Migrator().DropTable(&Param{})
+		if err := DB.Migrator().AutoMigrate(&Param{}); err != nil {
+			t.Errorf("failed to migrate, got error: %v", err)
+		}
+
+		cmp1 := Param{
+			DisplayName: "TestJSONSliceScan-1",
+			Config:      datatypes.JSON("{\"param1\": 1234, \"param2\": \"test\"}"),
+		}
+
+		cmp2 := Param{
+			DisplayName: "TestJSONSliceScan-2",
+			Config:      datatypes.JSON("{\"param1\": 456, \"param2\": \"test2\"}"),
+		}
+
+		if err := DB.Create(&cmp1).Error; err != nil {
+			t.Errorf("Failed to create param %v", err)
+		}
+		if err := DB.Create(&cmp2).Error; err != nil {
+			t.Errorf("Failed to create param %v", err)
+		}
+
+		var retSingle1 Param
+		if err := DB.Where("id = ?", cmp2.ID).First(&retSingle1).Error; err != nil {
+			t.Errorf("Failed to find param %v", err)
+		}
+
+		var retSingle2 Param
+		if err := DB.Where("id = ?", cmp2.ID).First(&retSingle2).Error; err != nil {
+			t.Errorf("Failed to find param %v", err)
+		}
+
+		AssertEqual(t, retSingle1, cmp2)
+		AssertEqual(t, retSingle2, cmp2)
+
+		var retMultiple []Param
+		if err := DB.Find(&retMultiple).Error; err != nil {
+			t.Errorf("Failed to find param %v", err)
+		}
+
+		AssertEqual(t, retSingle1, cmp2)
+		AssertEqual(t, retSingle2, cmp2)
+	}
+}
