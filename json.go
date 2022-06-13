@@ -109,11 +109,20 @@ type JSONQueryExpression struct {
 	hasKeys     bool
 	equals      bool
 	equalsValue interface{}
+	extract     bool
+	path        string
 }
 
 // JSONQuery query column as json
 func JSONQuery(column string) *JSONQueryExpression {
 	return &JSONQueryExpression{column: column}
+}
+
+// Extract extract json with path
+func (jsonQuery *JSONQueryExpression) Extract(path string) *JSONQueryExpression {
+	jsonQuery.extract = true
+	jsonQuery.path = path
+	return jsonQuery
 }
 
 // HasKey returns clause.Expression
@@ -137,6 +146,12 @@ func (jsonQuery *JSONQueryExpression) Build(builder clause.Builder) {
 		switch stmt.Dialector.Name() {
 		case "mysql", "sqlite":
 			switch {
+			case jsonQuery.extract:
+				builder.WriteString("JSON_EXTRACT(")
+				builder.WriteQuoted(jsonQuery.column)
+				builder.WriteByte(',')
+				builder.AddVar(stmt, jsonQuery.path)
+				builder.WriteString(")")
 			case jsonQuery.hasKeys:
 				if len(jsonQuery.keys) > 0 {
 					builder.WriteString("JSON_EXTRACT(")
@@ -198,12 +213,12 @@ func (jsonQuery *JSONQueryExpression) Build(builder clause.Builder) {
 
 // JSONOverlapsExpression JSON_OVERLAPS expression, implements clause.Expression interface to use as querier
 type JSONOverlapsExpression struct {
-	column string
+	column clause.Expression
 	val    string
 }
 
 // JSONOverlaps query column as json
-func JSONOverlaps(column, value string) *JSONOverlapsExpression {
+func JSONOverlaps(column clause.Expression, value string) *JSONOverlapsExpression {
 	return &JSONOverlapsExpression{
 		column: column,
 		val:    value,
@@ -216,9 +231,26 @@ func (json *JSONOverlapsExpression) Build(builder clause.Builder) {
 	if stmt, ok := builder.(*gorm.Statement); ok {
 		switch stmt.Dialector.Name() {
 		case "mysql":
-			builder.WriteString("JSON_OVERLAPS(" + stmt.Quote(json.column) + ",")
+			builder.WriteString("JSON_OVERLAPS(")
+			json.column.Build(builder)
+			builder.WriteString(",")
 			builder.AddVar(stmt, json.val)
 			builder.WriteString(")")
+		}
+	}
+}
+
+type columnExpression string
+
+func Column(col string) columnExpression {
+	return columnExpression(col)
+}
+
+func (col columnExpression) Build(builder clause.Builder) {
+	if stmt, ok := builder.(*gorm.Statement); ok {
+		switch stmt.Dialector.Name() {
+		case "mysql", "sqlite", "postgres":
+			builder.WriteString(stmt.Quote(string(col)))
 		}
 	}
 }
