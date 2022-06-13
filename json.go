@@ -111,11 +111,15 @@ type JSONQueryExpression struct {
 	equalsValue interface{}
 	extract     bool
 	path        string
+	prefix      string
 }
 
 // JSONQuery query column as json
 func JSONQuery(column string) *JSONQueryExpression {
-	return &JSONQueryExpression{column: column}
+	return &JSONQueryExpression{
+		column: column,
+		prefix: "$.",
+	}
 }
 
 // Extract extract json with path
@@ -157,7 +161,7 @@ func (jsonQuery *JSONQueryExpression) Build(builder clause.Builder) {
 					builder.WriteString("JSON_EXTRACT(")
 					builder.WriteQuoted(jsonQuery.column)
 					builder.WriteByte(',')
-					builder.AddVar(stmt, jsonQueryJoin(jsonQuery.keys))
+					builder.AddVar(stmt, jsonQuery.jsonQueryJoin(jsonQuery.keys))
 					builder.WriteString(") IS NOT NULL")
 				}
 			case jsonQuery.equals:
@@ -165,7 +169,7 @@ func (jsonQuery *JSONQueryExpression) Build(builder clause.Builder) {
 					builder.WriteString("JSON_EXTRACT(")
 					builder.WriteQuoted(jsonQuery.column)
 					builder.WriteByte(',')
-					builder.AddVar(stmt, jsonQueryJoin(jsonQuery.keys))
+					builder.AddVar(stmt, jsonQuery.jsonQueryJoin(jsonQuery.keys))
 					builder.WriteString(") = ")
 					if value, ok := jsonQuery.equalsValue.(bool); ok {
 						builder.WriteString(strconv.FormatBool(value))
@@ -255,14 +259,12 @@ func (col columnExpression) Build(builder clause.Builder) {
 	}
 }
 
-const prefix = "$."
-
-func jsonQueryJoin(keys []string) string {
+func (jsonQuery *JSONQueryExpression) jsonQueryJoin(keys []string) string {
 	if len(keys) == 1 {
-		return prefix + keys[0]
+		return jsonQuery.prefix + keys[0]
 	}
 
-	n := len(prefix)
+	n := len(jsonQuery.prefix)
 	n += len(keys) - 1
 	for i := 0; i < len(keys); i++ {
 		n += len(keys[i])
@@ -270,7 +272,7 @@ func jsonQueryJoin(keys []string) string {
 
 	var b strings.Builder
 	b.Grow(n)
-	b.WriteString(prefix)
+	b.WriteString(jsonQuery.prefix)
 	b.WriteString(keys[0])
 	for _, key := range keys[1:] {
 		b.WriteString(".")
