@@ -3,9 +3,11 @@ package datatypes_test
 import (
 	"database/sql/driver"
 	"encoding/json"
+	"strings"
 	"testing"
 
 	"gorm.io/datatypes"
+	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	. "gorm.io/gorm/utils/tests"
 )
@@ -175,5 +177,133 @@ func TestJSONSliceScan(t *testing.T) {
 
 		AssertEqual(t, retSingle1, cmp2)
 		AssertEqual(t, retSingle2, cmp2)
+	}
+}
+
+func TestJSONSet(t *testing.T) {
+	if SupportedDriver("sqlite", "mysql") {
+		type UserWithJSON struct {
+			gorm.Model
+			Name       string
+			Attributes datatypes.JSON
+		}
+
+		DB.Migrator().DropTable(&UserWithJSON{})
+		if err := DB.Migrator().AutoMigrate(&UserWithJSON{}); err != nil {
+			t.Errorf("failed to migrate, got error: %v", err)
+		}
+
+		var isMariaDB bool
+		if DB.Dialector.Name() == "mysql" {
+			if v, ok := DB.Dialector.(*mysql.Dialector); ok {
+				isMariaDB = strings.Contains(v.ServerVersion, "MariaDB")
+			}
+		}
+		users := []UserWithJSON{{
+			Name:       "json-1",
+			Attributes: datatypes.JSON([]byte(`{"name": "json-1", "age": 18, "orgs": {"orga": "orga"}, "tags": ["tag1", "tag2"], "admin": true}`)),
+		}, {
+			Name:       "json-2",
+			Attributes: datatypes.JSON([]byte(`{"name": "json-2", "age": 28, "tags": ["tag1", "tag3"], "role": "admin", "orgs": {"orgb": "orgb"}}`)),
+		}, {
+			Name:       "json-3",
+			Attributes: datatypes.JSON([]byte(`{"name": "json-3"}`)),
+		}, {
+			Name:       "json-4",
+			Attributes: datatypes.JSON([]byte(`{"name": "json-4"}`)),
+		}}
+
+		if err := DB.Create(&users).Error; err != nil {
+			t.Errorf("Failed to create users %v", err)
+		}
+
+		tmp := make(map[string]interface{})
+
+		// update int, string
+		if err := DB.Model(&UserWithJSON{}).Where("name = ?", "json-1").UpdateColumn("attributes", datatypes.JSONSet("attributes").Set("age", 20).Set("role", "tester")).Error; err != nil {
+			t.Fatalf("failed to update user with json key, got error %v", err)
+		}
+		var result UserWithJSON
+		if err := DB.First(&result, "name = ?", "json-1").Error; err != nil {
+			t.Fatalf("failed to find user with json key, got error %v", err)
+		}
+		_ = json.Unmarshal(result.Attributes, &tmp)
+		AssertEqual(t, tmp["age"], 20)
+		AssertEqual(t, tmp["role"], "tester")
+
+		if err := DB.Model(&UserWithJSON{}).Where("name = ?", "json-2").UpdateColumn("attributes", datatypes.JSONSet("attributes").Set("tags[0]", "tag2")).Error; err != nil {
+			t.Fatalf("failed to update user with json key, got error %v", err)
+		}
+		var result2 UserWithJSON
+		if err := DB.First(&result2, "name = ?", "json-2").Error; err != nil {
+			t.Fatalf("failed to find user with json key, got error %v", err)
+		}
+		_ = json.Unmarshal(result2.Attributes, &tmp)
+		AssertEqual(t, tmp["tags"], []string{"tag2", "tag3"})
+
+		// MariaDB does not support CAST(? AS JSON),
+		if isMariaDB {
+			if err := DB.Model(&UserWithJSON{}).Where("name = ?", "json-2").UpdateColumn("attributes", datatypes.JSONSet("attributes").Set("phones", []string{"10086", "10085"})).Error; err != nil {
+				t.Fatalf("failed to update user with json key, got error %v", err)
+			}
+			var result3 UserWithJSON
+			if err := DB.First(&result3, "name = ?", "json-2").Error; err != nil {
+				t.Fatalf("failed to find user with json key, got error %v", err)
+			}
+			_ = json.Unmarshal(result3.Attributes, &tmp)
+			AssertEqual(t, tmp["phones"], `["10086","10085"]`)
+
+			if err := DB.Model(&UserWithJSON{}).Where("name = ?", "json-3").UpdateColumn("attributes", datatypes.JSONSet("attributes").Set("friend", result)).Error; err != nil {
+				t.Fatalf("failed to update user with json key, got error %v", err)
+			}
+			var result4 UserWithJSON
+			if err := DB.First(&result4, "name = ?", "json-3").Error; err != nil {
+				t.Fatalf("failed to find user with json key, got error %v", err)
+			}
+			m := make(map[string]interface{})
+
+			_ = json.Unmarshal(result4.Attributes, &m)
+			var tmpResult UserWithJSON
+			_ = json.Unmarshal([]byte(m["friend"].(string)), &tmpResult)
+			AssertEqual(t, tmpResult.Name, result.Name)
+
+		} else {
+			if err := DB.Model(&UserWithJSON{}).Where("name = ?", "json-2").UpdateColumn("attributes", datatypes.JSONSet("attributes").Set("phones", []string{"10086", "10085"})).Error; err != nil {
+				t.Fatalf("failed to update user with json key, got error %v", err)
+			}
+			var result3 UserWithJSON
+			if err := DB.First(&result3, "name = ?", "json-2").Error; err != nil {
+				t.Fatalf("failed to find user with json key, got error %v", err)
+			}
+			_ = json.Unmarshal(result3.Attributes, &tmp)
+			AssertEqual(t, tmp["phones"], []string{"10086", "10085"})
+
+			if err := DB.Model(&UserWithJSON{}).Where("name = ?", "json-3").UpdateColumn("attributes", datatypes.JSONSet("attributes").Set("friend", result)).Error; err != nil {
+				t.Fatalf("failed to update user with json key, got error %v", err)
+			}
+			var result4 UserWithJSON
+			if err := DB.First(&result4, "name = ?", "json-3").Error; err != nil {
+				t.Fatalf("failed to find user with json key, got error %v", err)
+			}
+			m := make(map[string]UserWithJSON)
+			_ = json.Unmarshal(result4.Attributes, &m)
+			AssertEqual(t, m["friend"], result)
+
+			if DB.Dialector.Name() == "mysql" {
+				if err := DB.Model(&UserWithJSON{}).Where("name = ?", "json-4").UpdateColumn("attributes", datatypes.JSONSet("attributes").Set("extra", gorm.Expr("CAST(? AS JSON)", `["a", "b"]`))).Error; err != nil {
+					t.Fatalf("failed to update user with json key, got error %v", err)
+				}
+			} else if DB.Dialector.Name() == "sqlite" {
+				if err := DB.Model(&UserWithJSON{}).Where("name = ?", "json-4").UpdateColumn("attributes", datatypes.JSONSet("attributes").Set("extra", gorm.Expr("JSON(?)", `["a", "b"]`))).Error; err != nil {
+					t.Fatalf("failed to update user with json key, got error %v", err)
+				}
+			}
+			var result5 UserWithJSON
+			if err := DB.First(&result5, "name = ?", "json-4").Error; err != nil {
+				t.Fatalf("failed to find user with json key, got error %v", err)
+			}
+			_ = json.Unmarshal(result5.Attributes, &tmp)
+			AssertEqual(t, tmp["extra"], []string{"a", "b"})
+		}
 	}
 }
