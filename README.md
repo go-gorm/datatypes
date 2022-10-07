@@ -92,3 +92,49 @@ DB.First(&result, "name = ? AND time = ?", "jinzhu", datatypes.NewTime(1, 2, 3, 
 
 NOTE: If the current using database is SQLite, the field column type is defined as `TEXT` type
 when GORM AutoMigrate because SQLite doesn't have time type.
+
+## JSON_SET
+
+sqlite, mysql supported
+
+```go
+import (
+	"gorm.io/datatypes"
+	"gorm.io/gorm"
+)
+
+type UserWithJSON struct {
+	gorm.Model
+	Name       string
+	Attributes datatypes.JSON
+}
+
+DB.Create(&UserWithJSON{
+	Name:       "json-1",
+	Attributes: datatypes.JSON([]byte(`{"name": "json-1", "age": 18, "tags": ["tag1", "tag2"], "orgs": {"orga": "orga"}}`)),
+})
+
+type User struct {
+	Name string
+	Age  int
+}
+
+friend := User{
+	Name: "Bob",
+	Age:  21,
+}
+
+// Set fields of JSON column
+datatypes.JSONSet("attributes").Set("age", 20).Set("tags[0]", "tag2").Set("orgs.orga", "orgb")
+
+DB.Model(&UserWithJSON{}).Where("name = ?", "json-1").UpdateColumn("attributes", datatypes.JSONSet("attributes").Set("age", 20).Set("tags[0]", "tag3").Set("orgs.orga", "orgb"))
+DB.Model(&UserWithJSON{}).Where("name = ?", "json-1").UpdateColumn("attributes", datatypes.JSONSet("attributes").Set("phones", []string{"10085", "10086"}))
+DB.Model(&UserWithJSON{}).Where("name = ?", "json-1").UpdateColumn("attributes", datatypes.JSONSet("attributes").Set("phones", gorm.Expr("CAST(? AS JSON)", `["10085", "10086"]`)))
+DB.Model(&UserWithJSON{}).Where("name = ?", "json-1").UpdateColumn("attributes", datatypes.JSONSet("attributes").Set("friend", friend))
+// MySQL
+// UPDATE `user_with_jsons` SET `attributes` = JSON_SET(`attributes`, '$.tags[0]', 'tag3', '$.orgs.orga', 'orgb', '$.age', 20) WHERE name = 'json-1'
+// UPDATE `user_with_jsons` SET `attributes` = JSON_SET(`attributes`, '$.phones', CAST('["10085", "10086"]' AS JSON)) WHERE name = 'json-1'
+// UPDATE `user_with_jsons` SET `attributes` = JSON_SET(`attributes`, '$.phones', CAST('["10085", "10086"]' AS JSON)) WHERE name = 'json-1'
+// UPDATE `user_with_jsons` SET `attributes` = JSON_SET(`attributes`, '$.friend', CAST('{"Name": "Bob", "Age": 21}' AS JSON)) WHERE name = 'json-1'
+```
+NOTE: MariaDB does not support CAST(? AS JSON).

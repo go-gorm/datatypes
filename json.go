@@ -6,8 +6,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"reflect"
 	"strconv"
 	"strings"
+	"sync"
 
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -277,4 +279,96 @@ func jsonQueryJoin(keys []string) string {
 		b.WriteString(key)
 	}
 	return b.String()
+}
+
+// JSONSetExpression json set expression, implements clause.Expression interface to use as updater
+type JSONSetExpression struct {
+	column     string
+	path2value map[string]interface{}
+	mutex      sync.RWMutex
+}
+
+// JSONSet update fields of json column
+func JSONSet(column string) *JSONSetExpression {
+	return &JSONSetExpression{column: column, path2value: make(map[string]interface{})}
+}
+
+// Set return clause.Expression
+func (jsonSet *JSONSetExpression) Set(path string, value interface{}) *JSONSetExpression {
+	jsonSet.mutex.Lock()
+	jsonSet.path2value[path] = value
+	jsonSet.mutex.Unlock()
+	return jsonSet
+}
+
+// Build implements clause.Expression
+// only support mysql and sqlite
+func (jsonSet *JSONSetExpression) Build(builder clause.Builder) {
+	if stmt, ok := builder.(*gorm.Statement); ok {
+		switch stmt.Dialector.Name() {
+		case "mysql":
+
+			var isMariaDB bool
+			if v, ok := stmt.Dialector.(*mysql.Dialector); ok {
+				isMariaDB = strings.Contains(v.ServerVersion, "MariaDB")
+			}
+
+			builder.WriteString("JSON_SET(")
+			builder.WriteQuoted(jsonSet.column)
+			for path, value := range jsonSet.path2value {
+				builder.WriteByte(',')
+				builder.AddVar(stmt, prefix+path)
+				builder.WriteByte(',')
+
+				if _, ok := value.(clause.Expression); ok {
+					stmt.AddVar(builder, value)
+					continue
+				}
+
+				rv := reflect.ValueOf(value)
+				if rv.Kind() == reflect.Ptr {
+					rv = rv.Elem()
+				}
+				switch rv.Kind() {
+				case reflect.Slice, reflect.Array, reflect.Struct, reflect.Map:
+					b, _ := json.Marshal(value)
+					if isMariaDB {
+						stmt.AddVar(builder, string(b))
+						break
+					}
+					stmt.AddVar(builder, gorm.Expr("CAST(? AS JSON)", string(b)))
+				default:
+					stmt.AddVar(builder, value)
+				}
+			}
+			builder.WriteString(")")
+
+		case "sqlite":
+			builder.WriteString("JSON_SET(")
+			builder.WriteQuoted(jsonSet.column)
+			for path, value := range jsonSet.path2value {
+				builder.WriteByte(',')
+				builder.AddVar(stmt, prefix+path)
+				builder.WriteByte(',')
+
+				if _, ok := value.(clause.Expression); ok {
+					stmt.AddVar(builder, value)
+					continue
+				}
+
+				rv := reflect.ValueOf(value)
+				if rv.Kind() == reflect.Ptr {
+					rv = rv.Elem()
+				}
+				switch rv.Kind() {
+				case reflect.Slice, reflect.Array, reflect.Struct, reflect.Map:
+					b, _ := json.Marshal(value)
+					stmt.AddVar(builder, gorm.Expr("JSON(?)", string(b)))
+				default:
+					stmt.AddVar(builder, value)
+				}
+			}
+			builder.WriteString(")")
+		}
+	}
 }
