@@ -138,3 +138,61 @@ DB.Model(&UserWithJSON{}).Where("name = ?", "json-1").UpdateColumn("attributes",
 // UPDATE `user_with_jsons` SET `attributes` = JSON_SET(`attributes`, '$.friend', CAST('{"Name": "Bob", "Age": 21}' AS JSON)) WHERE name = 'json-1'
 ```
 NOTE: MariaDB does not support CAST(? AS JSON).
+
+## JSONType[T]
+
+sqlite, mysql, postgres supported
+
+```go
+import "gorm.io/datatypes"
+
+type Attribute struct {
+	Sex   int
+	Age   int
+	Orgs  map[string]string
+	Tags  []string
+	Admin bool
+	Role  string
+}
+
+type UserWithJSON struct {
+	gorm.Model
+	Name       string
+	Attributes datatypes.JSONType[Attribute]
+}
+
+var user = UserWithJSON{
+	Name: "hello"
+	Attributes: datatypes.JSONType[Attribute]{
+		Data: Attribute{
+			Age:  18,
+			Sex:  1,
+			Orgs: map[string]string{"orga": "orga"},
+			Tags: []string{"tag1", "tag2", "tag3"},
+		},
+	},
+}
+
+// Create
+DB.Create(&user)
+
+// First
+var result UserWithJSON
+DB.First(&result, user.ID)
+
+// Update
+jsonMap = UserWithJSON{
+	Attributes: datatypes.JSONType[Attribute]{
+		Data: Attribute{
+			Age:  18,
+			Sex:  1,
+			Orgs: map[string]string{"orga": "orga"},
+			Tags: []string{"tag1", "tag2", "tag3"},
+		},
+	},
+}
+
+DB.Model(&user).Updates(jsonMap)
+```
+
+NOTE: it's not support json query
