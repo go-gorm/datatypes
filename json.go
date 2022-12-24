@@ -178,6 +178,10 @@ func (jsonQuery *JSONQueryExpression) Build(builder clause.Builder) {
 			}
 		case "postgres":
 			switch {
+			case jsonQuery.extract:
+				builder.WriteString(fmt.Sprintf("json_extract_path_text(%v::json,", stmt.Quote(jsonQuery.column)))
+				stmt.AddVar(builder, jsonQuery.path)
+				builder.WriteByte(')')
 			case jsonQuery.hasKeys:
 				if len(jsonQuery.keys) > 0 {
 					stmt.WriteQuoted(jsonQuery.column)
