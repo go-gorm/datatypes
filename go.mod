@@ -6,13 +6,12 @@ require (
 	github.com/jinzhu/now v1.1.5
 	gorm.io/driver/mysql v1.4.4
 	gorm.io/driver/postgres v1.4.5
-	gorm.io/driver/sqlite v1.4.3
+	gorm.io/driver/sqlite v1.4.4
 	gorm.io/driver/sqlserver v1.4.1
 	gorm.io/gorm v1.24.2
 )
 
 require (
-	github.com/denisenkom/go-mssqldb v0.12.0 // indirect
 	github.com/go-sql-driver/mysql v1.7.0 // indirect
 	github.com/golang-sql/civil v0.0.0-20220223132316-b832511892a9 // indirect
 	github.com/golang-sql/sqlexp v0.1.0 // indirect
