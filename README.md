@@ -196,3 +196,35 @@ DB.Model(&user).Updates(jsonMap)
 ```
 
 NOTE: it's not support json query
+
+## JSONArray
+
+mysql supported
+
+```go
+import "gorm.io/datatypes"
+
+type Params struct {
+    ID          int
+    Letters     string
+    Config      datatypes.JSON
+}
+
+//Create
+DB.Create(&Param{
+    Letters: "JSONArray-1",
+    Config:      datatypes.JSON("[\"a\", \"b\"]"),
+})
+
+DB.Create(&Param{
+    Letters: "JSONArray-2",
+    Config:      datatypes.JSON("[\"a\", \"c\"]"),
+})
+
+//Query
+var retMultiple []Param
+DB.Where(datatypes.JSONArrayQuery("config").Contains("c")).Find(&retMultiple)
+}
+```
+
+

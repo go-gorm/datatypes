@@ -376,3 +376,31 @@ func (jsonSet *JSONSetExpression) Build(builder clause.Builder) {
 		}
 	}
 }
+
+func JSONArrayQuery(column string) *JSONArrayExpression {
+	return &JSONArrayExpression{
+		column: column,
+	}
+}
+
+type JSONArrayExpression struct {
+	column      string
+	equalsValue interface{}
+}
+
+func (json *JSONArrayExpression) Contains(value interface{}) *JSONArrayExpression {
+	json.equalsValue = value
+	return json
+}
+
+// Build implements clause.Expression
+func (json *JSONArrayExpression) Build(builder clause.Builder) {
+	if stmt, ok := builder.(*gorm.Statement); ok {
+		switch stmt.Dialector.Name() {
+		case "mysql":
+			builder.WriteString("JSON_CONTAINS (" + stmt.Quote(json.column) + ", JSON_ARRAY(")
+			builder.AddVar(stmt, json.equalsValue)
+			builder.WriteString("))")
+		}
+	}
+}
