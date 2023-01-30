@@ -212,12 +212,12 @@ type Params struct {
 
 //Create
 DB.Create(&Param{
-    DisplayName: "JSONArray-1",
+    Letters: "JSONArray-1",
     Config:      datatypes.JSON("[\"a\", \"b\"]"),
 })
 
 DB.Create(&Param{
-    DisplayName: "JSONArray-2",
+    Letters: "JSONArray-2",
     Config:      datatypes.JSON("[\"a\", \"c\"]"),
 })
 
