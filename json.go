@@ -319,7 +319,7 @@ func (jsonSet *JSONSetExpression) Set(path string, value interface{}) *JSONSetEx
 }
 
 // Build implements clause.Expression
-// only support mysql and sqlite
+// support mysql, sqlite and postgres
 func (jsonSet *JSONSetExpression) Build(builder clause.Builder) {
 	if stmt, ok := builder.(*gorm.Statement); ok {
 		switch stmt.Dialector.Name() {
