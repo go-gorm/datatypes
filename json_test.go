@@ -188,6 +188,132 @@ func TestJSONSliceScan(t *testing.T) {
 	}
 }
 
+func TestPostgresJSONSet(t *testing.T) {
+	if !SupportedDriver("postgres") {
+		t.Skip()
+	}
+
+	type UserWithJSON struct {
+		gorm.Model
+		Name       string
+		Attributes datatypes.JSON
+	}
+
+	DB.Migrator().DropTable(&UserWithJSON{})
+	if err := DB.Migrator().AutoMigrate(&UserWithJSON{}); err != nil {
+		t.Errorf("failed to migrate, got error: %v", err)
+	}
+
+	users := []UserWithJSON{{
+		Name:       "json-1",
+		Attributes: datatypes.JSON(`{"name": "json-1", "age": 18, "orgs": {"orga": "orga"}, "tags": ["tag1", "tag2"], "admin": true}`),
+	}, {
+		Name:       "json-2",
+		Attributes: datatypes.JSON(`{"name": "json-2", "age": 28, "tags": ["tag1", "tag3"], "role": "admin", "orgs": {"orgb": "orgb"}}`),
+	}, {
+		Name:       "json-3",
+		Attributes: datatypes.JSON(`{"name": "json-3"}`),
+	}, {
+		Name:       "json-4",
+		Attributes: datatypes.JSON(`{"name": "json-4"}`),
+	}}
+
+	if err := DB.Create(&users).Error; err != nil {
+		t.Errorf("Failed to create users %v", err)
+	}
+
+	tests := []struct {
+		name       string
+		userName   string
+		path2value map[string]interface{}
+		expect     map[string]interface{}
+	}{
+		{
+			name:     "update int and string",
+			userName: "json-1",
+			path2value: map[string]interface{}{
+				"{age}":  20,
+				"{role}": "tester",
+			},
+			expect: map[string]interface{}{
+				"age":  20,
+				"role": "tester",
+			},
+		}, {
+			name:     "update array child",
+			userName: "json-2",
+			path2value: map[string]interface{}{
+				"{tags, 0}": "tag2",
+			},
+			expect: map[string]interface{}{
+				"tags": []string{"tag2", "tag3"},
+			},
+		}, {
+			name:     "update array",
+			userName: "json-2",
+			path2value: map[string]interface{}{
+				"{phones}": []string{"10086", "10085"},
+			},
+			expect: map[string]interface{}{
+				"phones": []string{"10086", "10085"},
+			},
+		}, {
+			name:     "update by expr",
+			userName: "json-4",
+			path2value: map[string]interface{}{
+				"{extra}": gorm.Expr("?::jsonb", `["a", "b"]`),
+			},
+			expect: map[string]interface{}{
+				"extra": []string{"a", "b"},
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			jsonSet := datatypes.JSONSet("attributes")
+			for path, value := range test.path2value {
+				jsonSet = jsonSet.Set(path, value)
+			}
+
+			if err := DB.Model(&UserWithJSON{}).Where("name = ?", test.userName).UpdateColumn("attributes", jsonSet).Error; err != nil {
+				t.Fatalf("failed to update user with json key, got error %v", err)
+			}
+
+			var result UserWithJSON
+			if err := DB.First(&result, "name = ?", test.userName).Error; err != nil {
+				t.Fatalf("failed to find user with json key, got error %v", err)
+			}
+			actual := make(map[string]interface{})
+			if err := json.Unmarshal(result.Attributes, &actual); err != nil {
+				t.Fatalf("failed to unmarshal attributes, got err %v", err)
+			}
+
+			for key, value := range test.expect {
+				AssertEqual(t, value, test.expect[key])
+			}
+		})
+	}
+
+	if err := DB.Model(&UserWithJSON{}).Where("name = ?", "json-3").UpdateColumn("attributes", datatypes.JSONSet("attributes").Set("{friend}", users[0])).Error; err != nil {
+		t.Fatalf("failed to update user with json key, got error %v", err)
+	}
+	var result UserWithJSON
+	if err := DB.First(&result, "name = ?", "json-3").Error; err != nil {
+		t.Fatalf("failed to find user with json key, got error %v", err)
+	}
+	actual := make(map[string]json.RawMessage)
+	if err := json.Unmarshal(result.Attributes, &actual); err != nil {
+		t.Fatalf("failed to unmarshal attributes, got err %v", err)
+	}
+	var friend UserWithJSON
+	if err := json.Unmarshal(actual["friend"], &friend); err != nil {
+		t.Fatalf("failed to unmarshal attributes, got err %v", err)
+	}
+	AssertEqual(t, friend.ID, users[0].ID)
+	AssertEqual(t, friend.Name, users[0].Name)
+}
+
 func TestJSONSet(t *testing.T) {
 	if SupportedDriver("sqlite", "mysql") {
 		type UserWithJSON struct {
