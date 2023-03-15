@@ -152,7 +152,7 @@ func (jsonQuery *JSONQueryExpression) Build(builder clause.Builder) {
 				builder.WriteString("JSON_EXTRACT(")
 				builder.WriteQuoted(jsonQuery.column)
 				builder.WriteByte(',')
-				builder.AddVar(stmt, jsonQuery.path)
+				builder.AddVar(stmt, prefix+jsonQuery.path)
 				builder.WriteString(")")
 			case jsonQuery.hasKeys:
 				if len(jsonQuery.keys) > 0 {
