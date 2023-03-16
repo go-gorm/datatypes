@@ -105,11 +105,12 @@ func TestJSONSlice(t *testing.T) {
 			Name  string
 			Score float64
 		}
-		type UserWithJSON struct {
+		type UserWithJSON2 struct {
 			gorm.Model
 			Name string
 			Tags datatypes.JSONSlice[Tag]
 		}
+		type UserWithJSON = UserWithJSON2
 
 		DB.Migrator().DropTable(&UserWithJSON{})
 		if err := DB.Migrator().AutoMigrate(&UserWithJSON{}); err != nil {
@@ -139,11 +140,11 @@ func TestJSONSlice(t *testing.T) {
 		}
 
 		var result UserWithJSON
-		if err := DB.First(&result, users[1].ID).Error; err != nil {
+		if err := DB.First(&result, users[0].ID).Error; err != nil {
 			t.Fatalf("failed to find user with json key, got error %v", err)
 		}
-		AssertEqual(t, result.Name, users[1].Name)
-		AssertEqual(t, result.Tags[0], users[1].Tags[0])
+		AssertEqual(t, result.Name, users[0].Name)
+		AssertEqual(t, result.Tags[0], users[0].Tags[0])
 
 		// FirstOrCreate
 		jsonMap := UserWithJSON{
