@@ -118,13 +118,11 @@ func TestJSON(t *testing.T) {
 			t.Fatalf("failed to find user with json value, got error %v", err)
 		}
 
-		if DB.Dialector.Name() == "postgres" {
-			var results9 []UserWithJSON
-			if err := DB.Where("? = ?", datatypes.JSONQuery("attributes").Extract("name"), "json-2").Find(&results9).Error; err != nil || len(results9) != 1 {
-				t.Fatalf("failed to find user with json value, got error %v", err)
-			}
-			AssertEqual(t, results9[0].Name, users[1].Name)
+		var results9 []UserWithJSON
+		if err := DB.Where("? = ?", datatypes.JSONQuery("attributes").Extract("name"), "json-2").Find(&results9).Error; err != nil || len(results9) != 1 {
+			t.Fatalf("failed to find user with json value, got error %v", err)
 		}
+		AssertEqual(t, results9[0].Name, users[1].Name)
 
 		// not support for sqlite
 		// JSONOverlaps
