@@ -179,7 +179,7 @@ type UserWithJSON struct {
 }
 
 var user = UserWithJSON{
-	Name: "hello"
+	Name: "hello",
 	Attributes: datatypes.JSONType[Attribute]{
 		Data: Attribute{
 			Age:  18,
@@ -207,6 +207,48 @@ jsonMap = UserWithJSON{
 			Tags: []string{"tag1", "tag2", "tag3"},
 		},
 	},
+}
+
+DB.Model(&user).Updates(jsonMap)
+```
+
+NOTE: it's not support json query
+
+## JSONSlice[T]
+
+sqlite, mysql, postgres supported
+
+```go
+import "gorm.io/datatypes"
+
+type Tag struct {
+	Name  string
+	Score float64
+}
+
+type UserWithJSON struct {
+	gorm.Model
+	Name       string
+	Tags       datatypes.JSONSlice[Tag]
+}
+
+var tags = []Tag{{Name: "tag1", Score: 0.1}, {Name: "tag2", Score: 0.2}}
+var user = UserWithJSON{
+	Name: "hello",
+	Tags: datatypes.NewJSONSlice(tags),
+}
+
+// Create
+DB.Create(&user)
+
+// First
+var result UserWithJSON
+DB.First(&result, user.ID)
+
+// Update
+var tags2 = []Tag{{Name: "tag3", Score: 10.1}, {Name: "tag4", Score: 10.2}}
+jsonMap = UserWithJSON{
+	Tags: datatypes.NewJSONSlice(tags2),
 }
 
 DB.Model(&user).Updates(jsonMap)
