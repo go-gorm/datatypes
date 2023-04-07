@@ -254,7 +254,7 @@ jsonMap = UserWithJSON{
 DB.Model(&user).Updates(jsonMap)
 ```
 
-NOTE: it's not support json query
+NOTE: it's not support json query and `db.Pluck` method
 
 ## JSONArray
 
