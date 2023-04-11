@@ -172,3 +172,13 @@ func TestJSONMap(t *testing.T) {
 		}
 	}
 }
+
+func TestJSONMap_Scan(t *testing.T) {
+	content := `{"user_id": 1085238870184050699, "name": "Name of user"}`
+	obj := make(datatypes.JSONMap)
+	err := obj.Scan([]byte(content))
+	if err != nil {
+		t.Fatalf("decode error %v", err)
+	}
+	AssertEqual(t, obj["user_id"], 1085238870184050699)
+}
