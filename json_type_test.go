@@ -56,7 +56,7 @@ func TestJSONType(t *testing.T) {
 			Attributes: datatypes.NewJSONType(Attribute{Tags: []string{"tag1", "tag2", "tag3"}}),
 		}, {
 			Name:       "json-5",
-			Attributes: datatypes.JSONType[Attribute]{Data: Attribute{Tags: []string{"tag1", "tag2", "tag3"}}},
+			Attributes: datatypes.NewJSONType(Attribute{Tags: []string{"tag1", "tag2", "tag3"}}),
 		}}
 
 		if err := DB.Create(&users).Error; err != nil {
@@ -68,9 +68,40 @@ func TestJSONType(t *testing.T) {
 			t.Fatalf("failed to find user with json key, got error %v", err)
 		}
 		AssertEqual(t, result.Name, users[1].Name)
-		AssertEqual(t, result.Attributes.Data.Age, users[1].Attributes.Data.Age)
-		AssertEqual(t, result.Attributes.Data.Admin, users[1].Attributes.Data.Admin)
-		AssertEqual(t, len(result.Attributes.Data.Orgs), len(users[1].Attributes.Data.Orgs))
+		AssertEqual(t, result.Attributes.Data().Age, users[1].Attributes.Data().Age)
+		AssertEqual(t, result.Attributes.Data().Admin, users[1].Attributes.Data().Admin)
+		AssertEqual(t, len(result.Attributes.Data().Orgs), len(users[1].Attributes.Data().Orgs))
+
+		// List
+		var users2 []UserWithJSON
+		if err := DB.Model(&UserWithJSON{}).Limit(10).Order("id asc").Find(&users2).Error; err != nil {
+			t.Fatalf("failed to select attribute field, got error %v", err)
+		}
+		AssertEqual(t, users2[0].Attributes.Data().Age, 18)
+
+		// Select Field
+		var singleUser UserWithJSON
+		if err := DB.Model(&UserWithJSON{}).Select("attributes").Limit(1).Order("id asc").Find(&singleUser).Error; err != nil {
+			t.Fatalf("failed to select attribute field, got error %v", err)
+		}
+		AssertEqual(t, singleUser.Attributes.Data().Age, 18)
+
+		// Pluck
+		var attr datatypes.JSONType[Attribute]
+		if err := DB.Model(&UserWithJSON{}).Limit(1).Order("id asc").Pluck("attributes", &attr).Error; err != nil {
+			t.Fatalf("failed to pluck for field, got error %v", err)
+		}
+		var attribute = attr.Data()
+		AssertEqual(t, attribute.Age, 18)
+
+		// Smart Select Fields
+		var row struct {
+			Attributes datatypes.JSONType[Attribute]
+		}
+		if err := DB.Model(&UserWithJSON{}).Limit(1).Order("id asc").Find(&row).Error; err != nil {
+			t.Fatalf("failed to select attribute field, got error %v", err)
+		}
+		AssertEqual(t, row.Attributes.Data().Age, 18)
 
 		// FirstOrCreate
 		jsonMap := UserWithJSON{
@@ -82,14 +113,14 @@ func TestJSONType(t *testing.T) {
 
 		// Update
 		jsonMap = UserWithJSON{
-			Attributes: datatypes.JSONType[Attribute]{
-				Data: Attribute{
+			Attributes: datatypes.NewJSONType(
+				Attribute{
 					Age:  18,
 					Sex:  1,
 					Orgs: map[string]string{"orga": "orga"},
 					Tags: []string{"tag1", "tag2", "tag3"},
 				},
-			},
+			),
 		}
 		var result3 UserWithJSON
 		result3.ID = 1
@@ -145,6 +176,26 @@ func TestJSONSlice(t *testing.T) {
 		}
 		AssertEqual(t, result.Name, users[0].Name)
 		AssertEqual(t, result.Tags[0], users[0].Tags[0])
+
+		// Pluck
+		/*
+			var pluckTags datatypes.JSONSlice[Tag]
+			if err := DB.Model(&UserWithJSON{}).Limit(1).Order("id asc").Pluck("tags", &pluckTags).Error; err != nil {
+				t.Fatalf("failed to pluck for field, got error %v", err)
+			}
+			AssertEqual(t, len(pluckTags), 2)
+			AssertEqual(t, pluckTags[0].Name, "tag1")
+		*/
+
+		// Smart Select Fields
+		var row struct {
+			Tags datatypes.JSONSlice[Tag]
+		}
+		if err := DB.Model(&UserWithJSON{}).Limit(1).Order("id asc").Find(&row).Error; err != nil {
+			t.Fatalf("failed to select attribute field, got error %v", err)
+		}
+		AssertEqual(t, len(row.Tags), 2)
+		AssertEqual(t, row.Tags[0].Name, "tag1")
 
 		// FirstOrCreate
 		jsonMap := UserWithJSON{
