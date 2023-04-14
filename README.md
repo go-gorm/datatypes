@@ -180,14 +180,12 @@ type UserWithJSON struct {
 
 var user = UserWithJSON{
 	Name: "hello",
-	Attributes: datatypes.JSONType[Attribute]{
-		Data: Attribute{
-			Age:  18,
-			Sex:  1,
-			Orgs: map[string]string{"orga": "orga"},
-			Tags: []string{"tag1", "tag2", "tag3"},
-		},
-	},
+	Attributes: datatypes.NewJSONType(Attribute{
+        Age:  18,
+        Sex:  1,
+        Orgs: map[string]string{"orga": "orga"},
+        Tags: []string{"tag1", "tag2", "tag3"},
+    }),
 }
 
 // Create
@@ -199,14 +197,12 @@ DB.First(&result, user.ID)
 
 // Update
 jsonMap = UserWithJSON{
-	Attributes: datatypes.JSONType[Attribute]{
-		Data: Attribute{
-			Age:  18,
-			Sex:  1,
-			Orgs: map[string]string{"orga": "orga"},
-			Tags: []string{"tag1", "tag2", "tag3"},
-		},
-	},
+	Attributes: datatypes.NewJSONType(Attribute{
+        Age:  18,
+        Sex:  1,
+        Orgs: map[string]string{"orga": "orga"},
+        Tags: []string{"tag1", "tag2", "tag3"},
+    }),
 }
 
 DB.Model(&user).Updates(jsonMap)
