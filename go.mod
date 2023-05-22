@@ -4,11 +4,11 @@ go 1.18
 
 require (
 	github.com/jinzhu/now v1.1.5
-	gorm.io/driver/mysql v1.4.7
+	gorm.io/driver/mysql v1.5.1
 	gorm.io/driver/postgres v1.5.0
 	gorm.io/driver/sqlite v1.4.3
 	gorm.io/driver/sqlserver v1.4.1
-	gorm.io/gorm v1.24.7-0.20230306060331-85eaf9eeda11
+	gorm.io/gorm v1.25.1
 )
 
 require (
