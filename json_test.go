@@ -124,6 +124,12 @@ func TestJSON(t *testing.T) {
 		}
 		AssertEqual(t, results9[0].Name, users[1].Name)
 
+		var result10 UserWithJSON
+		if err := DB.First(&result10, datatypes.JSONQuery("attributes").Likes("%dmi%", "role")).Error; err != nil {
+			t.Fatalf("failed to find user with json value, got error %v", err)
+		}
+		AssertEqual(t, result10.Name, users[1].Name)
+
 		// not support for sqlite
 		// JSONOverlaps
 		//var result9 UserWithJSON
