@@ -137,6 +137,7 @@ DB.Model(&UserWithJSON{}).Where("name = ?", "json-1").UpdateColumn("attributes",
 // UPDATE `user_with_jsons` SET `attributes` = JSON_SET(`attributes`, '$.phones', CAST('["10085", "10086"]' AS JSON)) WHERE name = 'json-1'
 // UPDATE `user_with_jsons` SET `attributes` = JSON_SET(`attributes`, '$.friend', CAST('{"Name": "Bob", "Age": 21}' AS JSON)) WHERE name = 'json-1'
 ```
+
 NOTE: MariaDB does not support CAST(? AS JSON).
 
 NOTE: Path in PostgreSQL is different.
@@ -282,4 +283,25 @@ DB.Where(datatypes.JSONArrayQuery("config").Contains("c")).Find(&retMultiple)
 }
 ```
 
+## NanoID
 
+postgres supported
+
+```go
+import "gorm.io/datatypes"
+
+type UserWithNanoID struct {
+	ID   datatypes.NanoID `gorm:"nanoid" json:"id"`
+	Name string
+}
+
+//Create
+user := UserWithNanoID{Name: "vidzai"}
+DB.Create(&user)
+
+//Query
+result := UserWithNanoID{}
+if err := DB.First(&result, "id = ?", user.ID).Error; err != nil {
+	t.Fatalf("Failed to find user with id")
+}
+```
