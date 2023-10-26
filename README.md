@@ -259,7 +259,7 @@ mysql supported
 ```go
 import "gorm.io/datatypes"
 
-type Params struct {
+type Param struct {
     ID          int
     Letters     string
     Config      datatypes.JSON
