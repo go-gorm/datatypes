@@ -112,6 +112,7 @@ type JSONQueryExpression struct {
 	equals      bool
 	likes       bool
 	equalsValue interface{}
+	likes       bool
 	extract     bool
 	path        string
 }
@@ -143,7 +144,7 @@ func (jsonQuery *JSONQueryExpression) Equals(value interface{}, keys ...string) 
 	return jsonQuery
 }
 
-// Likes return clause.Expression
+// Likes returns clause.Expression
 func (jsonQuery *JSONQueryExpression) Likes(value interface{}, keys ...string) *JSONQueryExpression {
 	jsonQuery.keys = keys
 	jsonQuery.likes = true
@@ -171,13 +172,18 @@ func (jsonQuery *JSONQueryExpression) Build(builder clause.Builder) {
 					builder.AddVar(stmt, jsonQueryJoin(jsonQuery.keys))
 					builder.WriteString(") IS NOT NULL")
 				}
-			case jsonQuery.equals:
+			case jsonQuery.equals, jsonQuery.likes:
 				if len(jsonQuery.keys) > 0 {
 					builder.WriteString("JSON_EXTRACT(")
 					builder.WriteQuoted(jsonQuery.column)
 					builder.WriteByte(',')
 					builder.AddVar(stmt, jsonQueryJoin(jsonQuery.keys))
-					builder.WriteString(") = ")
+					if jsonQuery.equals {
+						builder.WriteString(") = ")
+					} else if jsonQuery.likes {
+						builder.WriteString(") LIKE ")
+					}
+
 					if value, ok := jsonQuery.equalsValue.(bool); ok {
 						builder.WriteString(strconv.FormatBool(value))
 					} else {
