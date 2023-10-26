@@ -110,6 +110,7 @@ type JSONQueryExpression struct {
 	keys        []string
 	hasKeys     bool
 	equals      bool
+	likes       bool
 	equalsValue interface{}
 	extract     bool
 	path        string
@@ -138,6 +139,14 @@ func (jsonQuery *JSONQueryExpression) HasKey(keys ...string) *JSONQueryExpressio
 func (jsonQuery *JSONQueryExpression) Equals(value interface{}, keys ...string) *JSONQueryExpression {
 	jsonQuery.keys = keys
 	jsonQuery.equals = true
+	jsonQuery.equalsValue = value
+	return jsonQuery
+}
+
+// Likes return clause.Expression
+func (jsonQuery *JSONQueryExpression) Likes(value interface{}, keys ...string) *JSONQueryExpression {
+	jsonQuery.keys = keys
+	jsonQuery.likes = true
 	jsonQuery.equalsValue = value
 	return jsonQuery
 }
@@ -175,6 +184,19 @@ func (jsonQuery *JSONQueryExpression) Build(builder clause.Builder) {
 						stmt.AddVar(builder, jsonQuery.equalsValue)
 					}
 				}
+			case jsonQuery.likes:
+				if len(jsonQuery.keys) > 0 {
+					builder.WriteString("JSON_EXTRACT(")
+					builder.WriteQuoted(jsonQuery.column)
+					builder.WriteByte(',')
+					builder.AddVar(stmt, jsonQueryJoin(jsonQuery.keys))
+					builder.WriteString(") LIKE ")
+					if value, ok := jsonQuery.equalsValue.(bool); ok {
+						builder.WriteString(strconv.FormatBool(value))
+					} else {
+						stmt.AddVar(builder, jsonQuery.equalsValue)
+					}
+				}
 			}
 		case "postgres":
 			switch {
@@ -205,6 +227,24 @@ func (jsonQuery *JSONQueryExpression) Build(builder clause.Builder) {
 						stmt.AddVar(builder, key)
 					}
 					builder.WriteString(") = ")
+
+					if _, ok := jsonQuery.equalsValue.(string); ok {
+						stmt.AddVar(builder, jsonQuery.equalsValue)
+					} else {
+						stmt.AddVar(builder, fmt.Sprint(jsonQuery.equalsValue))
+					}
+				}
+			case jsonQuery.likes:
+				if len(jsonQuery.keys) > 0 {
+					builder.WriteString(fmt.Sprintf("json_extract_path_text(%v::json,", stmt.Quote(jsonQuery.column)))
+
+					for idx, key := range jsonQuery.keys {
+						if idx > 0 {
+							builder.WriteByte(',')
+						}
+						stmt.AddVar(builder, key)
+					}
+					builder.WriteString(") LIKE ")
 
 					if _, ok := jsonQuery.equalsValue.(string); ok {
 						stmt.AddVar(builder, jsonQuery.equalsValue)
