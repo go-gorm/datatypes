@@ -4,15 +4,15 @@ go 1.18
 
 require (
 	github.com/jinzhu/now v1.1.5
-	gorm.io/driver/mysql v1.4.7
+	gorm.io/driver/mysql v1.5.2
 	gorm.io/driver/postgres v1.5.0
 	gorm.io/driver/sqlite v1.4.3
 	gorm.io/driver/sqlserver v1.4.1
-	gorm.io/gorm v1.24.7-0.20230306060331-85eaf9eeda11
+	gorm.io/gorm v1.25.5
 )
 
 require (
-	github.com/go-sql-driver/mysql v1.7.0 // indirect
+	github.com/go-sql-driver/mysql v1.7.1 // indirect
 	github.com/golang-sql/civil v0.0.0-20220223132316-b832511892a9 // indirect
 	github.com/golang-sql/sqlexp v0.1.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
