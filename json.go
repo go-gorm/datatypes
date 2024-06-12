@@ -467,6 +467,14 @@ func (json *JSONArrayExpression) Build(builder clause.Builder) {
 			builder.WriteString("JSON_CONTAINS (" + stmt.Quote(json.column) + ", JSON_ARRAY(")
 			builder.AddVar(stmt, json.equalsValue)
 			builder.WriteString("))")
+		case "sqlite":
+			builder.WriteString("exists(SELECT 1 FROM json_each(" + stmt.Quote(json.column) + ") WHERE value = ")
+			builder.AddVar(stmt, json.equalsValue)
+			builder.WriteString(")")
+		case "postgres":
+			builder.WriteString(stmt.Quote(json.column))
+			builder.WriteString(" ? ")
+			builder.AddVar(stmt, json.equalsValue)
 		}
 	}
 }
