@@ -10,6 +10,14 @@ import (
 
 type UUID uuid.UUID
 
+func NewUUIDv1() UUID {
+	return UUID(uuid.Must(uuid.NewUUID()))
+}
+
+func NewUUIDv4() UUID {
+	return UUID(uuid.Must(uuid.NewRandom()))
+}
+
 // GormDataType gorm common data type
 func (UUID) GormDataType() string {
 	return "string"

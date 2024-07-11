@@ -25,35 +25,18 @@ func TestUUID(t *testing.T) {
 			t.Errorf("failed to migrate, got error: %v", err)
 		}
 
-		user1UUID, uuidGenErr := uuid.NewUUID()
-		if uuidGenErr != nil {
-			t.Fatalf("failed to generate a new UUID, got error %v", uuidGenErr)
-		}
-		user2UUID, uuidGenErr := uuid.NewUUID()
-		if uuidGenErr != nil {
-			t.Fatalf("failed to generate a new UUID, got error %v", uuidGenErr)
-		}
-		user3UUID, uuidGenErr := uuid.NewUUID()
-		if uuidGenErr != nil {
-			t.Fatalf("failed to generate a new UUID, got error %v", uuidGenErr)
-		}
-		user4UUID, uuidGenErr := uuid.NewUUID()
-		if uuidGenErr != nil {
-			t.Fatalf("failed to generate a new UUID, got error %v", uuidGenErr)
-		}
-
 		users := []UserWithUUID{{
 			Name:     "uuid-1",
-			UserUUID: datatypes.UUID(user1UUID),
+			UserUUID: datatypes.NewUUIDv1(),
 		}, {
 			Name:     "uuid-2",
-			UserUUID: datatypes.UUID(user2UUID),
+			UserUUID: datatypes.NewUUIDv1(),
 		}, {
 			Name:     "uuid-3",
-			UserUUID: datatypes.UUID(user3UUID),
+			UserUUID: datatypes.NewUUIDv4(),
 		}, {
 			Name:     "uuid-4",
-			UserUUID: datatypes.UUID(user4UUID),
+			UserUUID: datatypes.NewUUIDv4(),
 		}}
 
 		if err := DB.Create(&users).Error; err != nil {
@@ -115,27 +98,10 @@ func TestUUIDPtr(t *testing.T) {
 			t.Errorf("failed to migrate, got error: %v", err)
 		}
 
-		user1UUID, uuidGenErr := uuid.NewUUID()
-		if uuidGenErr != nil {
-			t.Fatalf("failed to generate a new UUID, got error %v", uuidGenErr)
-		}
-		user2UUID, uuidGenErr := uuid.NewUUID()
-		if uuidGenErr != nil {
-			t.Fatalf("failed to generate a new UUID, got error %v", uuidGenErr)
-		}
-		user3UUID, uuidGenErr := uuid.NewUUID()
-		if uuidGenErr != nil {
-			t.Fatalf("failed to generate a new UUID, got error %v", uuidGenErr)
-		}
-		user4UUID, uuidGenErr := uuid.NewUUID()
-		if uuidGenErr != nil {
-			t.Fatalf("failed to generate a new UUID, got error %v", uuidGenErr)
-		}
-
-		uuid1 := datatypes.UUID(user1UUID)
-		uuid2 := datatypes.UUID(user2UUID)
-		uuid3 := datatypes.UUID(user3UUID)
-		uuid4 := datatypes.UUID(user4UUID)
+		uuid1 := datatypes.NewUUIDv1()
+		uuid2 := datatypes.NewUUIDv1()
+		uuid3 := datatypes.NewUUIDv4()
+		uuid4 := datatypes.NewUUIDv4()
 
 		users := []UserWithUUIDPtr{{
 			Name:     "uuid-1",
