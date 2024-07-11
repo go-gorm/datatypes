@@ -13,7 +13,7 @@ type UserWithJSON struct {
 	Attributes datatypes.JSON
 }
 
-DB.Create(&User{
+DB.Create(&UserWithJSON{
 	Name:       "json-1",
 	Attributes: datatypes.JSON([]byte(`{"name": "jinzhu", "age": 18, "tags": ["tag1", "tag2"], "orgs": {"orga": "orga"}}`)),
 }
