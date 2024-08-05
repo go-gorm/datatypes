@@ -8,6 +8,8 @@ import (
 	"gorm.io/gorm/schema"
 )
 
+// This datatype stores the uuid in the database as a string. To store the uuid
+// in the database as a binary (byte) array, please refer to datatypes.BinUUID.
 type UUID uuid.UUID
 
 // NewUUIDv1 generates a UUID version 1, panics on generation failure.

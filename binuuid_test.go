@@ -10,33 +10,33 @@ import (
 	. "gorm.io/gorm/utils/tests"
 )
 
-var _ driver.Valuer = &datatypes.UUID{}
+var _ driver.Valuer = &datatypes.BinUUID{}
 
-func TestUUID(t *testing.T) {
+func TestBinUUID(t *testing.T) {
 	if SupportedDriver("sqlite", "mysql", "postgres", "sqlserver") {
-		type UserWithUUID struct {
+		type UserWithBinUUID struct {
 			gorm.Model
 			Name     string
-			UserUUID datatypes.UUID
+			UserUUID datatypes.BinUUID
 		}
 
-		DB.Migrator().DropTable(&UserWithUUID{})
-		if err := DB.Migrator().AutoMigrate(&UserWithUUID{}); err != nil {
+		DB.Migrator().DropTable(&UserWithBinUUID{})
+		if err := DB.Migrator().AutoMigrate(&UserWithBinUUID{}); err != nil {
 			t.Errorf("failed to migrate, got error: %v", err)
 		}
 
-		users := []UserWithUUID{{
+		users := []UserWithBinUUID{{
 			Name:     "uuid-1",
-			UserUUID: datatypes.NewUUIDv1(),
+			UserUUID: datatypes.NewBinUUIDv1(),
 		}, {
 			Name:     "uuid-2",
-			UserUUID: datatypes.NewUUIDv1(),
+			UserUUID: datatypes.NewBinUUIDv1(),
 		}, {
 			Name:     "uuid-3",
-			UserUUID: datatypes.NewUUIDv4(),
+			UserUUID: datatypes.NewBinUUIDv4(),
 		}, {
 			Name:     "uuid-4",
-			UserUUID: datatypes.NewUUIDv4(),
+			UserUUID: datatypes.NewBinUUIDv4(),
 		}}
 
 		if err := DB.Create(&users).Error; err != nil {
@@ -44,7 +44,7 @@ func TestUUID(t *testing.T) {
 		}
 
 		for _, user := range users {
-			result := UserWithUUID{}
+			result := UserWithBinUUID{}
 			if err := DB.First(
 				&result, "name = ? AND user_uuid = ?",
 				user.Name,
@@ -63,6 +63,7 @@ func TestUUID(t *testing.T) {
 				t.Fatalf("failed to get result value, got error: %v", err)
 			}
 			AssertEqual(t, valueUser, valueResult)
+			AssertEqual(t, user.UserUUID.LengthBytes(), 16)
 			AssertEqual(t, user.UserUUID.Length(), 36)
 		}
 
@@ -71,12 +72,14 @@ func TestUUID(t *testing.T) {
 		AssertEqual(t, user1.UserUUID.IsNil(), false)
 		AssertEqual(t, user1.UserUUID.IsEmpty(), false)
 		tx = DB.Model(&user1).Updates(
-			map[string]interface{}{"user_uuid": uuid.Nil},
+			map[string]interface{}{
+				"user_uuid": datatypes.BinUUIDFromString(uuid.Nil.String()),
+			},
 		)
 		AssertEqual(t, tx.Error, nil)
 		AssertEqual(t, user1.UserUUID.IsNil(), true)
 		AssertEqual(t, user1.UserUUID.IsEmpty(), true)
-		user1NewUUID := datatypes.NewUUIDv4()
+		user1NewUUID := datatypes.NewBinUUIDv4()
 		tx = DB.Model(&user1).Updates(
 			map[string]interface{}{
 				"user_uuid": user1NewUUID,
@@ -94,7 +97,7 @@ func TestUUID(t *testing.T) {
 		AssertEqual(t, tx.Error, nil)
 		AssertEqual(t, user2.UserUUID.IsNil(), true)
 		AssertEqual(t, user2.UserUUID.IsEmpty(), true)
-		user2NewUUID := datatypes.NewUUIDv4()
+		user2NewUUID := datatypes.NewBinUUIDv4()
 		tx = DB.Model(&user2).Updates(
 			map[string]interface{}{
 				"user_uuid": user2NewUUID,
@@ -105,25 +108,25 @@ func TestUUID(t *testing.T) {
 	}
 }
 
-func TestUUIDPtr(t *testing.T) {
+func TestBinUUIDPtr(t *testing.T) {
 	if SupportedDriver("sqlite", "mysql", "postgres", "sqlserver") {
-		type UserWithUUIDPtr struct {
+		type UserWithBinUUIDPtr struct {
 			gorm.Model
 			Name     string
-			UserUUID *datatypes.UUID
+			UserUUID *datatypes.BinUUID
 		}
 
-		DB.Migrator().DropTable(&UserWithUUIDPtr{})
-		if err := DB.Migrator().AutoMigrate(&UserWithUUIDPtr{}); err != nil {
+		DB.Migrator().DropTable(&UserWithBinUUIDPtr{})
+		if err := DB.Migrator().AutoMigrate(&UserWithBinUUIDPtr{}); err != nil {
 			t.Errorf("failed to migrate, got error: %v", err)
 		}
 
-		uuid1 := datatypes.NewUUIDv1()
-		uuid2 := datatypes.NewUUIDv1()
-		uuid3 := datatypes.NewUUIDv4()
-		uuid4 := datatypes.NewUUIDv4()
+		uuid1 := datatypes.NewBinUUIDv1()
+		uuid2 := datatypes.NewBinUUIDv1()
+		uuid3 := datatypes.NewBinUUIDv4()
+		uuid4 := datatypes.NewBinUUIDv4()
 
-		users := []UserWithUUIDPtr{{
+		users := []UserWithBinUUIDPtr{{
 			Name:     "uuid-1",
 			UserUUID: &uuid1,
 		}, {
@@ -142,7 +145,7 @@ func TestUUIDPtr(t *testing.T) {
 		}
 
 		for _, user := range users {
-			result := UserWithUUIDPtr{}
+			result := UserWithBinUUIDPtr{}
 			if err := DB.First(
 				&result, "name = ? AND user_uuid = ?",
 				user.Name,
@@ -161,6 +164,7 @@ func TestUUIDPtr(t *testing.T) {
 				t.Fatalf("failed to get result value, got error: %v", err)
 			}
 			AssertEqual(t, valueUser, valueResult)
+			AssertEqual(t, user.UserUUID.LengthBytes(), 16)
 			AssertEqual(t, user.UserUUID.Length(), 36)
 		}
 
