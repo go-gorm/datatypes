@@ -92,7 +92,7 @@ func TestBinUUID(t *testing.T) {
 		AssertEqual(t, user2.UserUUID.IsNil(), false)
 		AssertEqual(t, user2.UserUUID.IsEmpty(), false)
 		tx = DB.Model(&user2).Updates(
-			map[string]interface{}{"user_uuid": nil},
+			map[string]interface{}{"user_uuid": datatypes.NewNilBinUUID()},
 		)
 		AssertEqual(t, tx.Error, nil)
 		AssertEqual(t, user2.UserUUID.IsNil(), true)
@@ -171,9 +171,11 @@ func TestBinUUIDPtr(t *testing.T) {
 		user1 := users[0]
 		AssertEqual(t, user1.UserUUID.IsNilPtr(), false)
 		AssertEqual(t, user1.UserUUID.IsEmptyPtr(), false)
-		tx := DB.Model(&user1).Updates(map[string]interface{}{"user_uuid": nil})
+		tx := DB.Model(&user1).Updates(map[string]interface{}{
+			"user_uuid": datatypes.NewNilBinUUID(),
+		})
 		AssertEqual(t, tx.Error, nil)
-		AssertEqual(t, user1.UserUUID.IsNilPtr(), true)
+		AssertEqual(t, user1.UserUUID.IsNil(), true)
 		AssertEqual(t, user1.UserUUID.IsEmptyPtr(), true)
 	}
 }

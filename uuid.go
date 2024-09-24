@@ -35,7 +35,7 @@ func (UUID) GormDBDataType(db *gorm.DB, field *schema.Field) string {
 	case "postgres":
 		return "UUID"
 	case "sqlserver":
-		return "NVARCHAR"
+		return "NVARCHAR(128)"
 	case "sqlite":
 		return "TEXT"
 	default:
