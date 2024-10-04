@@ -468,11 +468,18 @@ func TestJSONArrayQuery(t *testing.T) {
 			DisplayName: "JSONArray-2",
 			Config:      datatypes.JSON("[\"c\", \"a\"]"),
 		}
+		cmp3 := Param{
+			DisplayName: "JSONArray-3",
+			Config:      datatypes.JSON("{\"test\": [\"a\", \"b\"]}"),
+		}
 
 		if err := DB.Create(&cmp1).Error; err != nil {
 			t.Errorf("Failed to create param %v", err)
 		}
 		if err := DB.Create(&cmp2).Error; err != nil {
+			t.Errorf("Failed to create param %v", err)
+		}
+		if err := DB.Create(&cmp3).Error; err != nil {
 			t.Errorf("Failed to create param %v", err)
 		}
 
@@ -496,5 +503,9 @@ func TestJSONArrayQuery(t *testing.T) {
 		}
 		AssertEqual(t, len(retMultiple), 1)
 
+		if err := DB.Where(datatypes.JSONArrayQuery("config").Contains("a", "test")).Find(&retMultiple).Error; err != nil {
+			t.Fatalf("failed to find params with json value and keys, got error %v", err)
+		}
+		AssertEqual(t, len(retMultiple), 1)
 	}
 }
