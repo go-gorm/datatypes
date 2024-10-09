@@ -455,6 +455,7 @@ type JSONArrayExpression struct {
 	equalsValue interface{}
 }
 
+// Contains checks if the column[keys] has contains the value given. The keys parameter is only supported for MySQL.
 func (json *JSONArrayExpression) Contains(value interface{}, keys ...string) *JSONArrayExpression {
 	json.equalsValue = value
 	json.keys = keys
