@@ -13,7 +13,7 @@ jobs:
   sqlite:
     strategy:
       matrix:
-        go: ['1.19']
+        go: ['1.22', '1.21', '1.20']
         platform: [ubuntu-latest, macos-latest] # can not run in windows OS
     runs-on: ${{ matrix.platform }}
 
@@ -38,8 +38,8 @@ jobs:
   mysql:
     strategy:
       matrix:
-        dbversion: ['mysql:latest', 'mysql:5.7', 'mariadb:latest']
-        go: ['1.19']
+        dbversion: ['mysql:latest', 'mysql:5.7']
+        go: ['1.22', '1.21', '1.20']
         platform: [ubuntu-latest]
     runs-on: ${{ matrix.platform }}
 
@@ -59,6 +59,32 @@ jobs:
           --health-start-period 10s
           --health-timeout 5s
           --health-retries 10
+
+  mariadb:
+    strategy:
+      matrix:
+        dbversion: [ 'mariadb:latest' ]
+        go: ['1.22', '1.21', '1.20']
+        platform: [ ubuntu-latest ]
+    runs-on: ${{ matrix.platform }}
+
+    services:
+      mysql:
+        image: ${{ matrix.dbversion }}
+        env:
+          MYSQL_DATABASE: gorm
+          MYSQL_USER: gorm
+          MYSQL_PASSWORD: gorm
+          MYSQL_RANDOM_ROOT_PASSWORD: "yes"
+        ports:
+          - 9910:3306
+        options: >-
+          --health-cmd "mariadb-admin ping -ugorm -pgorm"
+          --health-interval 10s
+          --health-start-period 10s
+          --health-timeout 5s
+          --health-retries 10
+
 
     steps:
     - name: Set up Go 1.x
@@ -83,7 +109,7 @@ jobs:
     strategy:
       matrix:
         dbversion: ['postgres:latest', 'postgres:11', 'postgres:10']
-        go: ['1.19']
+        go: ['1.22', '1.21', '1.20']
         platform: [ubuntu-latest] # can not run in macOS and widnowsOS
     runs-on: ${{ matrix.platform }}
 
@@ -125,7 +151,7 @@ jobs:
   sqlserver:
     strategy:
       matrix:
-        go: ['1.19']
+        go: ['1.22', '1.21', '1.20']
         platform: [ubuntu-latest] # can not run test in macOS and windows
     runs-on: ${{ matrix.platform }}
 
