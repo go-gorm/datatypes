@@ -451,11 +451,14 @@ func JSONArrayQuery(column string) *JSONArrayExpression {
 
 type JSONArrayExpression struct {
 	column      string
+	keys        []string
 	equalsValue interface{}
 }
 
-func (json *JSONArrayExpression) Contains(value interface{}) *JSONArrayExpression {
+// Contains checks if the column[keys] has contains the value given. The keys parameter is only supported for MySQL.
+func (json *JSONArrayExpression) Contains(value interface{}, keys ...string) *JSONArrayExpression {
 	json.equalsValue = value
+	json.keys = keys
 	return json
 }
 
@@ -464,9 +467,14 @@ func (json *JSONArrayExpression) Build(builder clause.Builder) {
 	if stmt, ok := builder.(*gorm.Statement); ok {
 		switch stmt.Dialector.Name() {
 		case "mysql":
-			builder.WriteString("JSON_CONTAINS (" + stmt.Quote(json.column) + ", JSON_ARRAY(")
+			builder.WriteString("JSON_CONTAINS(" + stmt.Quote(json.column) + ",JSON_ARRAY(")
 			builder.AddVar(stmt, json.equalsValue)
-			builder.WriteString("))")
+			builder.WriteByte(')')
+			if len(json.keys) > 0 {
+				builder.WriteByte(',')
+				builder.AddVar(stmt, jsonQueryJoin(json.keys))
+			}
+			builder.WriteByte(')')
 		case "sqlite":
 			builder.WriteString("exists(SELECT 1 FROM json_each(" + stmt.Quote(json.column) + ") WHERE value = ")
 			builder.AddVar(stmt, json.equalsValue)
