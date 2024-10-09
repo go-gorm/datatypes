@@ -38,7 +38,9 @@ func TestURL(t *testing.T) {
 	DB.Create(&f2)
 
 	result := StructWithURL{}
-	if err := DB.First(&result, "file_name = ? AND storage = ?", "FLocal1",
+	if err := DB.First(
+		&result, "file_name = ? AND storage LIKE ?",
+		"FLocal1",
 		datatypes.URL{
 			Scheme: "file",
 			Path:   "/tmp/f1",
@@ -48,7 +50,9 @@ func TestURL(t *testing.T) {
 	AssertEqual(t, uf1.String(), result.Storage.String())
 
 	result = StructWithURL{}
-	if err := DB.First(&result, "file_name = ? AND storage = ?", "FRemote2",
+	if err := DB.First(
+		&result, "file_name = ? AND storage LIKE ?",
+		"FRemote2",
 		datatypes.URL{
 			Scheme:      "sftp",
 			User:        url.UserPassword("user", "pwd"),
@@ -66,7 +70,9 @@ func TestURL(t *testing.T) {
 	AssertEqual(t, us, result.Storage.String())
 
 	result = StructWithURL{}
-	if err := DB.First(&result, "file_name = ? AND storage = ?", "FRemote2",
+	if err := DB.First(
+		&result, "file_name = ? AND storage LIKE ?",
+		"FRemote2",
 		datatypes.URL{
 			Scheme:   "sftp",
 			Opaque:   "//user:pwd@127.0.0.1/f2",
@@ -78,7 +84,9 @@ func TestURL(t *testing.T) {
 	AssertEqual(t, us, result.Storage.String())
 
 	result = StructWithURL{}
-	if err := DB.First(&result, "file_name = ? AND storage = ?", "FRemote2",
+	if err := DB.First(
+		&result, "file_name = ? AND storage LIKE ?",
+		"FRemote2",
 		datatypes.URL{
 			Scheme:   "sftp",
 			User:     url.User("user"),

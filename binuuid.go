@@ -25,6 +25,11 @@ func NewBinUUIDv4() BinUUID {
 	return BinUUID(uuid.Must(uuid.NewRandom()))
 }
 
+// NewNilBinUUID generates a nil uuid.
+func NewNilBinUUID() BinUUID {
+	return BinUUID(uuid.Nil)
+}
+
 // BinUUIDFromString returns the BinUUID representation of the specified uuidStr.
 func BinUUIDFromString(uuidStr string) BinUUID {
 	return BinUUID(uuid.MustParse(uuidStr))
