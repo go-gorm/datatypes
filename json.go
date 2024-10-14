@@ -465,7 +465,7 @@ func (json *JSONArrayExpression) Contains(value interface{}, keys ...string) *JS
 	return json
 }
 
-// In checks if columns[keys] is in the array value given. This method is only supported by MySQL.
+// In checks if columns[keys] is in the array value given. This method is only supported for MySQL.
 func (json *JSONArrayExpression) In(value interface{}, keys ...string) *JSONArrayExpression {
 	json.in = true
 	json.keys = keys
@@ -502,13 +502,19 @@ func (json *JSONArrayExpression) Build(builder clause.Builder) {
 				builder.AddVar(stmt, json.equalsValue)
 			}
 		case "sqlite":
-			builder.WriteString("exists(SELECT 1 FROM json_each(" + stmt.Quote(json.column) + ") WHERE value = ")
-			builder.AddVar(stmt, json.equalsValue)
-			builder.WriteString(")")
+			switch {
+			case json.contains:
+				builder.WriteString("exists(SELECT 1 FROM json_each(" + stmt.Quote(json.column) + ") WHERE value = ")
+				builder.AddVar(stmt, json.equalsValue)
+				builder.WriteString(")")
+			}
 		case "postgres":
-			builder.WriteString(stmt.Quote(json.column))
-			builder.WriteString(" ? ")
-			builder.AddVar(stmt, json.equalsValue)
+			switch {
+			case json.contains:
+				builder.WriteString(stmt.Quote(json.column))
+				builder.WriteString(" ? ")
+				builder.AddVar(stmt, json.equalsValue)
+			}
 		}
 	}
 }
