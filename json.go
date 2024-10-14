@@ -450,15 +450,26 @@ func JSONArrayQuery(column string) *JSONArrayExpression {
 }
 
 type JSONArrayExpression struct {
+	contains    bool
+	in          bool
 	column      string
 	keys        []string
 	equalsValue interface{}
 }
 
-// Contains checks if the column[keys] has contains the value given. The keys parameter is only supported for MySQL.
+// Contains checks if the column[keys] contains the value given. The keys parameter is only supported for MySQL.
 func (json *JSONArrayExpression) Contains(value interface{}, keys ...string) *JSONArrayExpression {
+	json.contains = true
 	json.equalsValue = value
 	json.keys = keys
+	return json
+}
+
+// In checks if columns[keys] is in the array value given. This method is only supported by MySQL.
+func (json *JSONArrayExpression) In(value interface{}, keys ...string) *JSONArrayExpression {
+	json.in = true
+	json.keys = keys
+	json.equalsValue = value
 	return json
 }
 
@@ -467,14 +478,29 @@ func (json *JSONArrayExpression) Build(builder clause.Builder) {
 	if stmt, ok := builder.(*gorm.Statement); ok {
 		switch stmt.Dialector.Name() {
 		case "mysql":
-			builder.WriteString("JSON_CONTAINS(" + stmt.Quote(json.column) + ",JSON_ARRAY(")
-			builder.AddVar(stmt, json.equalsValue)
-			builder.WriteByte(')')
-			if len(json.keys) > 0 {
-				builder.WriteByte(',')
-				builder.AddVar(stmt, jsonQueryJoin(json.keys))
+			switch {
+			case json.contains:
+				builder.WriteString("JSON_CONTAINS(" + stmt.Quote(json.column) + ",JSON_ARRAY(")
+				builder.AddVar(stmt, json.equalsValue)
+				builder.WriteByte(')')
+				if len(json.keys) > 0 {
+					builder.WriteByte(',')
+					builder.AddVar(stmt, jsonQueryJoin(json.keys))
+				}
+				builder.WriteByte(')')
+			case json.in:
+				if len(json.keys) > 0 {
+					builder.WriteString("JSON_EXTRACT(")
+				}
+				builder.WriteString(stmt.Quote(json.column))
+				if len(json.keys) > 0 {
+					builder.WriteByte(',')
+					builder.AddVar(stmt, jsonQueryJoin(json.keys))
+					builder.WriteByte(')')
+				}
+				builder.WriteString(" IN ")
+				builder.AddVar(stmt, json.equalsValue)
 			}
-			builder.WriteByte(')')
 		case "sqlite":
 			builder.WriteString("exists(SELECT 1 FROM json_each(" + stmt.Quote(json.column) + ") WHERE value = ")
 			builder.AddVar(stmt, json.equalsValue)

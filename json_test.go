@@ -463,7 +463,6 @@ func TestJSONArrayQuery(t *testing.T) {
 			DisplayName: "JSONArray-1",
 			Config:      datatypes.JSON("[\"a\", \"b\"]"),
 		}
-
 		cmp2 := Param{
 			DisplayName: "JSONArray-2",
 			Config:      datatypes.JSON("[\"c\", \"a\"]"),
@@ -471,6 +470,10 @@ func TestJSONArrayQuery(t *testing.T) {
 		cmp3 := Param{
 			DisplayName: "JSONArray-3",
 			Config:      datatypes.JSON("{\"test\": [\"a\", \"b\"]}"),
+		}
+		cmp4 := Param{
+			DisplayName: "JSONArray-4",
+			Config:      datatypes.JSON("{\"test\": \"c\"}"),
 		}
 
 		if err := DB.Create(&cmp1).Error; err != nil {
@@ -480,6 +483,9 @@ func TestJSONArrayQuery(t *testing.T) {
 			t.Errorf("Failed to create param %v", err)
 		}
 		if err := DB.Create(&cmp3).Error; err != nil {
+			t.Errorf("Failed to create param %v", err)
+		}
+		if err := DB.Create(&cmp4).Error; err != nil {
 			t.Errorf("Failed to create param %v", err)
 		}
 
@@ -504,6 +510,11 @@ func TestJSONArrayQuery(t *testing.T) {
 		AssertEqual(t, len(retMultiple), 1)
 
 		if err := DB.Where(datatypes.JSONArrayQuery("config").Contains("a", "test")).Find(&retMultiple).Error; err != nil {
+			t.Fatalf("failed to find params with json value and keys, got error %v", err)
+		}
+		AssertEqual(t, len(retMultiple), 1)
+
+		if err := DB.Where(datatypes.JSONArrayQuery("config").In([]string{"c", "d"}, "test")).Find(&retMultiple).Error; err != nil {
 			t.Fatalf("failed to find params with json value and keys, got error %v", err)
 		}
 		AssertEqual(t, len(retMultiple), 1)
