@@ -492,7 +492,7 @@ func (json *JSONArrayExpression) Build(builder clause.Builder) {
 				if len(json.keys) > 0 {
 					builder.WriteString("JSON_EXTRACT(")
 				}
-				builder.WriteString(stmt.Quote(json.column))
+				builder.WriteQuoted(stmt.Quote(json.column))
 				if len(json.keys) > 0 {
 					builder.WriteByte(',')
 					builder.AddVar(stmt, jsonQueryJoin(json.keys))
