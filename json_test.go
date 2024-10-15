@@ -514,6 +514,11 @@ func TestJSONArrayQuery(t *testing.T) {
 		}
 		AssertEqual(t, len(retMultiple), 1)
 
+		if err := DB.Where(datatypes.JSONArrayQuery("config").In([]string{"c", "a"})).Find(&retMultiple).Error; err != nil {
+			t.Fatalf("failed to find params with json value, got error %v", err)
+		}
+		AssertEqual(t, len(retMultiple), 1)
+
 		if err := DB.Where(datatypes.JSONArrayQuery("config").In([]string{"c", "d"}, "test")).Find(&retMultiple).Error; err != nil {
 			t.Fatalf("failed to find params with json value and keys, got error %v", err)
 		}

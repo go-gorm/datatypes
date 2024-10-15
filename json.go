@@ -489,15 +489,19 @@ func (json *JSONArrayExpression) Build(builder clause.Builder) {
 				}
 				builder.WriteByte(')')
 			case json.in:
+				builder.WriteString("JSON_CONTAINS(JSON_ARRAY")
+				builder.AddVar(stmt, json.equalsValue)
+				builder.WriteByte(',')
 				if len(json.keys) > 0 {
-					builder.WriteString("JSON_CONTAINS(JSON_ARRAY")
-					builder.AddVar(stmt, json.equalsValue)
-					builder.WriteString(",JSON_EXTRACT(")
-					builder.WriteQuoted(json.column)
+					builder.WriteString("JSON_EXTRACT(")
+				}
+				builder.WriteQuoted(json.column)
+				if len(json.keys) > 0 {
 					builder.WriteByte(',')
 					builder.AddVar(stmt, jsonQueryJoin(json.keys))
-					builder.WriteString("))")
+					builder.WriteByte(')')
 				}
+				builder.WriteByte(')')
 			}
 		case "sqlite":
 			switch {
