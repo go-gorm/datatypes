@@ -506,9 +506,21 @@ func (json *JSONArrayExpression) Build(builder clause.Builder) {
 		case "sqlite":
 			switch {
 			case json.contains:
-				builder.WriteString("exists(SELECT 1 FROM json_each(" + stmt.Quote(json.column) + ") WHERE value = ")
+				builder.WriteString("EXISTS(SELECT 1 FROM json_each(")
+				builder.WriteQuoted(json.column)
+				if len(json.keys) > 0 {
+					builder.WriteByte(',')
+					builder.AddVar(stmt, jsonQueryJoin(json.keys))
+				}
+				builder.WriteString(") WHERE value = ")
 				builder.AddVar(stmt, json.equalsValue)
-				builder.WriteString(")")
+				builder.WriteString(") AND json_array_length(")
+				builder.WriteQuoted(json.column)
+				if len(json.keys) > 0 {
+					builder.WriteByte(',')
+					builder.AddVar(stmt, jsonQueryJoin(json.keys))
+				}
+				builder.WriteString(") > 0")
 			}
 		case "postgres":
 			switch {
