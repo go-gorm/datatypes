@@ -447,7 +447,7 @@ func TestJSONSet(t *testing.T) {
 }
 
 func TestJSONArrayQuery(t *testing.T) {
-	if SupportedDriver("mysql") {
+	if SupportedDriver("sqlite", "mysql") {
 		type Param struct {
 			ID          int
 			DisplayName string
@@ -514,14 +514,16 @@ func TestJSONArrayQuery(t *testing.T) {
 		}
 		AssertEqual(t, len(retMultiple), 1)
 
-		if err := DB.Where(datatypes.JSONArrayQuery("config").In([]string{"c", "a"})).Find(&retMultiple).Error; err != nil {
-			t.Fatalf("failed to find params with json value, got error %v", err)
-		}
-		AssertEqual(t, len(retMultiple), 1)
+		if SupportedDriver("mysql") {
+			if err := DB.Where(datatypes.JSONArrayQuery("config").In([]string{"c", "a"})).Find(&retMultiple).Error; err != nil {
+				t.Fatalf("failed to find params with json value, got error %v", err)
+			}
+			AssertEqual(t, len(retMultiple), 1)
 
-		if err := DB.Where(datatypes.JSONArrayQuery("config").In([]string{"c", "d"}, "test")).Find(&retMultiple).Error; err != nil {
-			t.Fatalf("failed to find params with json value and keys, got error %v", err)
+			if err := DB.Where(datatypes.JSONArrayQuery("config").In([]string{"c", "d"}, "test")).Find(&retMultiple).Error; err != nil {
+				t.Fatalf("failed to find params with json value and keys, got error %v", err)
+			}
+			AssertEqual(t, len(retMultiple), 1)
 		}
-		AssertEqual(t, len(retMultiple), 1)
 	}
 }
