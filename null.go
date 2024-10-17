@@ -1,13 +1,6 @@
-// Copyright 2011 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
-
-// Type conversions for Scan.
-
 package datatypes
 
 import (
-	"bytes"
 	"database/sql"
 	"database/sql/driver"
 	"errors"
@@ -16,6 +9,88 @@ import (
 	"strconv"
 	"time"
 )
+
+// NullString represents a string that may be null.
+// NullString implements the [Scanner] interface so
+// it can be used as a scan destination:
+//
+//	var s NullString
+//	err := db.QueryRow("SELECT name FROM foo WHERE id=?", id).Scan(&s)
+//	...
+//	if s.Valid {
+//	   // use s.String
+//	} else {
+//	   // NULL value
+//	}
+type NullString = Null[string]
+
+// NullInt64 represents an int64 that may be null.
+// NullInt64 implements the [Scanner] interface so
+// it can be used as a scan destination, similar to [NullString].
+type NullInt64 = Null[int64]
+
+// NullInt32 represents an int32 that may be null.
+// NullInt32 implements the [Scanner] interface so
+// it can be used as a scan destination, similar to [NullString].
+type NullInt32 = Null[int32]
+
+// NullInt16 represents an int16 that may be null.
+// NullInt16 implements the [Scanner] interface so
+// it can be used as a scan destination, similar to [NullString].
+type NullInt16 = Null[int16]
+
+// NullByte represents a byte that may be null.
+// NullByte implements the [Scanner] interface so
+// it can be used as a scan destination, similar to [NullString].
+type NullByte = Null[byte]
+
+// NullFloat64 represents a float64 that may be null.
+// NullFloat64 implements the [Scanner] interface so
+// it can be used as a scan destination, similar to [NullString].
+type NullFloat64 = Null[float64]
+
+// NullBool represents a bool that may be null.
+// NullBool implements the [Scanner] interface so
+// it can be used as a scan destination, similar to [NullString].
+type NullBool = Null[bool]
+
+// NullTime represents a [time.Time] that may be null.
+// NullTime implements the [Scanner] interface so
+// it can be used as a scan destination, similar to [NullString].
+type NullTime = Null[time.Time]
+
+// Null represents a value that may be null.
+// Null implements the [Scanner] interface so
+// it can be used as a scan destination:
+//
+//	var s Null[string]
+//	err := db.QueryRow("SELECT name FROM foo WHERE id=?", id).Scan(&s)
+//	...
+//	if s.Valid {
+//	   // use s.V
+//	} else {
+//	   // NULL value
+//	}
+type Null[T any] struct {
+	V     T
+	Valid bool
+}
+
+func (n *Null[T]) Scan(value any) error {
+	if value == nil {
+		n.V, n.Valid = *new(T), false
+		return nil
+	}
+	n.Valid = true
+	return convertAssign(&n.V, value)
+}
+
+func (n Null[T]) Value() (driver.Value, error) {
+	if !n.Valid {
+		return nil, nil
+	}
+	return n.V, nil
+}
 
 var errNilPtr = errors.New("destination pointer is nil") // embedded in descriptive error
 
@@ -47,7 +122,7 @@ func convertAssignRows(dest, src any, rows *sql.Rows) error {
 			}
 			*d = []byte(s)
 			return nil
-		case *RawBytes:
+		case *sql.RawBytes:
 			if d == nil {
 				return errNilPtr
 			}
@@ -66,15 +141,15 @@ func convertAssignRows(dest, src any, rows *sql.Rows) error {
 			if d == nil {
 				return errNilPtr
 			}
-			*d = bytes.Clone(s)
+			*d = cloneBytes(s)
 			return nil
 		case *[]byte:
 			if d == nil {
 				return errNilPtr
 			}
-			*d = bytes.Clone(s)
+			*d = cloneBytes(s)
 			return nil
-		case *RawBytes:
+		case *sql.RawBytes:
 			if d == nil {
 				return errNilPtr
 			}
@@ -95,7 +170,7 @@ func convertAssignRows(dest, src any, rows *sql.Rows) error {
 			}
 			*d = []byte(s.Format(time.RFC3339Nano))
 			return nil
-		case *RawBytes:
+		case *sql.RawBytes:
 			if d == nil {
 				return errNilPtr
 			}
@@ -121,40 +196,11 @@ func convertAssignRows(dest, src any, rows *sql.Rows) error {
 			}
 			*d = nil
 			return nil
-		case *RawBytes:
+		case *sql.RawBytes:
 			if d == nil {
 				return errNilPtr
 			}
 			*d = nil
-			return nil
-		}
-	// The driver is returning a cursor the client may iterate over.
-	case driver.Rows:
-		switch d := dest.(type) {
-		case *sql.Rows:
-			if d == nil {
-				return errNilPtr
-			}
-			if rows == nil {
-				return errors.New("invalid context to convert cursor rows, missing parent *Rows")
-			}
-			rows.closemu.Lock()
-			*d = sql.Rows{
-				dc:          rows.dc,
-				releaseConn: func(error) {},
-				rowsi:       s,
-			}
-			// Chain the cancel function.
-			parentCancel := rows.cancel
-			rows.cancel = func() {
-				// When Rows.cancel is called, the closemu will be locked as well.
-				// So we can access rs.lasterr.
-				d.close(rows.lasterr)
-				if parentCancel != nil {
-					parentCancel()
-				}
-			}
-			rows.closemu.Unlock()
 			return nil
 		}
 	}
@@ -178,10 +224,10 @@ func convertAssignRows(dest, src any, rows *sql.Rows) error {
 			*d = b
 			return nil
 		}
-	case *RawBytes:
+	case *sql.RawBytes:
 		sv = reflect.ValueOf(src)
 		if b, ok := asBytes([]byte(*d)[:0], sv); ok {
-			*d = RawBytes(b)
+			*d = sql.RawBytes(b)
 			return nil
 		}
 	case *bool:
@@ -215,7 +261,7 @@ func convertAssignRows(dest, src any, rows *sql.Rows) error {
 	if sv.IsValid() && sv.Type().AssignableTo(dv.Type()) {
 		switch b := src.(type) {
 		case []byte:
-			dv.Set(reflect.ValueOf(bytes.Clone(b)))
+			dv.Set(reflect.ValueOf(cloneBytes(b)))
 		default:
 			dv.Set(sv)
 		}
@@ -235,7 +281,6 @@ func convertAssignRows(dest, src any, rows *sql.Rows) error {
 	switch dv.Kind() {
 	case reflect.Pointer:
 		if src == nil {
-			dv.SetZero()
 			return nil
 		}
 		dv.Set(reflect.New(dv.Type().Elem()))
@@ -353,4 +398,14 @@ type decimalCompose interface {
 	// Compose sets the internal decimal value from parts. If the value cannot be
 	// represented then an error should be returned.
 	Compose(form byte, negative bool, coefficient []byte, exponent int32) error
+}
+
+// cloneBytes returns a copy of b[:len(b)].
+// The result may have additional unused capacity.
+// cloneBytes(nil) returns nil.
+func cloneBytes(b []byte) []byte {
+	if b == nil {
+		return nil
+	}
+	return append([]byte{}, b...)
 }
