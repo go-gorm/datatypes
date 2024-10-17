@@ -92,6 +92,11 @@ func (n Null[T]) Value() (driver.Value, error) {
 	return n.V, nil
 }
 
+// NewNull returns a new, non-null Null.
+func NewNull[T any](v T) Null[T] {
+	return Null[T]{V: v, Valid: true}
+}
+
 var errNilPtr = errors.New("destination pointer is nil") // embedded in descriptive error
 
 // convertAssign is the same as convertAssignRows, but without the optional
