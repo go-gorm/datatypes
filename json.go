@@ -521,6 +521,34 @@ func (json *JSONArrayExpression) Build(builder clause.Builder) {
 					builder.AddVar(stmt, jsonQueryJoin(json.keys))
 				}
 				builder.WriteString(") > 0")
+			case json.in:
+				builder.WriteString("CASE WHEN json_type(")
+				builder.WriteQuoted(json.column)
+				if len(json.keys) > 0 {
+					builder.WriteByte(',')
+					builder.AddVar(stmt, jsonQueryJoin(json.keys))
+				}
+				builder.WriteString(") = 'array' THEN NOT EXISTS(SELECT 1 FROM json_each(")
+				builder.WriteQuoted(json.column)
+				if len(json.keys) > 0 {
+					builder.WriteByte(',')
+					builder.AddVar(stmt, jsonQueryJoin(json.keys))
+				}
+				builder.WriteString(") WHERE value NOT IN ")
+				builder.AddVar(stmt, json.equalsValue)
+				builder.WriteString(") ELSE ")
+				if len(json.keys) > 0 {
+					builder.WriteString("json_extract(")
+				}
+				builder.WriteQuoted(json.column)
+				if len(json.keys) > 0 {
+					builder.WriteByte(',')
+					builder.AddVar(stmt, jsonQueryJoin(json.keys))
+					builder.WriteByte(')')
+				}
+				builder.WriteString(" IN ")
+				builder.AddVar(stmt, json.equalsValue)
+				builder.WriteString(" END")
 			}
 		case "postgres":
 			switch {
