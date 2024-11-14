@@ -1,4 +1,4 @@
-module gorm.io/datatypes
+module github.com/MichealJl/datatypes
 
 go 1.19
 
