@@ -394,6 +394,8 @@ func (jsonSet *JSONSetExpression) Build(builder clause.Builder) {
 						break
 					}
 					stmt.AddVar(builder, gorm.Expr("CAST(? AS JSON)", string(b)))
+				case reflect.Bool:
+					builder.WriteString(strconv.FormatBool(rv.Bool()))
 				default:
 					stmt.AddVar(builder, value)
 				}
