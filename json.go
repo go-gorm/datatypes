@@ -397,6 +397,8 @@ func (jsonSet *JSONSetExpression) Build(builder clause.Builder) {
 						break
 					}
 					stmt.AddVar(builder, gorm.Expr("CAST(? AS JSON)", string(b)))
+				case reflect.Bool:
+					builder.WriteString(strconv.FormatBool(rv.Bool()))
 				default:
 					stmt.AddVar(builder, value)
 				}
@@ -460,7 +462,7 @@ type JSONArrayExpression struct {
 	equalsValue interface{}
 }
 
-// Contains checks if the column[keys] contains the value given. The keys parameter is only supported for MySQL.
+// Contains checks if column[keys] contains the value given. The keys parameter is only supported for MySQL and SQLite.
 func (json *JSONArrayExpression) Contains(value interface{}, keys ...string) *JSONArrayExpression {
 	json.contains = true
 	json.equalsValue = value
@@ -468,7 +470,7 @@ func (json *JSONArrayExpression) Contains(value interface{}, keys ...string) *JS
 	return json
 }
 
-// In checks if columns[keys] is in the array value given. This method is only supported for MySQL.
+// In checks if columns[keys] is in the array value given. This method is only supported for MySQL and SQLite.
 func (json *JSONArrayExpression) In(value interface{}, keys ...string) *JSONArrayExpression {
 	json.in = true
 	json.keys = keys
@@ -524,6 +526,34 @@ func (json *JSONArrayExpression) Build(builder clause.Builder) {
 					builder.AddVar(stmt, jsonQueryJoin(json.keys))
 				}
 				builder.WriteString(") > 0")
+			case json.in:
+				builder.WriteString("CASE WHEN json_type(")
+				builder.WriteQuoted(json.column)
+				if len(json.keys) > 0 {
+					builder.WriteByte(',')
+					builder.AddVar(stmt, jsonQueryJoin(json.keys))
+				}
+				builder.WriteString(") = 'array' THEN NOT EXISTS(SELECT 1 FROM json_each(")
+				builder.WriteQuoted(json.column)
+				if len(json.keys) > 0 {
+					builder.WriteByte(',')
+					builder.AddVar(stmt, jsonQueryJoin(json.keys))
+				}
+				builder.WriteString(") WHERE value NOT IN ")
+				builder.AddVar(stmt, json.equalsValue)
+				builder.WriteString(") ELSE ")
+				if len(json.keys) > 0 {
+					builder.WriteString("json_extract(")
+				}
+				builder.WriteQuoted(json.column)
+				if len(json.keys) > 0 {
+					builder.WriteByte(',')
+					builder.AddVar(stmt, jsonQueryJoin(json.keys))
+					builder.WriteByte(')')
+				}
+				builder.WriteString(" IN ")
+				builder.AddVar(stmt, json.equalsValue)
+				builder.WriteString(" END")
 			}
 		case "postgres":
 			switch {
