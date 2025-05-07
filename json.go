@@ -457,6 +457,10 @@ type JSONArrayExpression struct {
 	column      string
 	keys        []string
 	equalsValue interface{}
+	// Add a new field to indicate whether to perform a length comparison
+	length bool
+	// Add a new field to store the expected length value
+	lengthValue int
 }
 
 // Contains checks if column[keys] contains the value given. The keys parameter is only supported for MySQL and SQLite.
@@ -472,6 +476,13 @@ func (json *JSONArrayExpression) In(value interface{}, keys ...string) *JSONArra
 	json.in = true
 	json.keys = keys
 	json.equalsValue = value
+	return json
+}
+
+// Length checks if the length of the JSON array matches the given value.
+func (json *JSONArrayExpression) Length(value int) *JSONArrayExpression {
+	json.length = true
+	json.lengthValue = value
 	return json
 }
 
@@ -504,6 +515,10 @@ func (json *JSONArrayExpression) Build(builder clause.Builder) {
 					builder.WriteByte(')')
 				}
 				builder.WriteByte(')')
+				// Add new logic to handle length comparison
+			case json.length:
+				builder.WriteString("JSON_LENGTH(" + stmt.Quote(json.column) + ") = ")
+				builder.AddVar(stmt, json.lengthValue)
 			}
 		case "sqlite":
 			switch {
@@ -551,6 +566,9 @@ func (json *JSONArrayExpression) Build(builder clause.Builder) {
 				builder.WriteString(" IN ")
 				builder.AddVar(stmt, json.equalsValue)
 				builder.WriteString(" END")
+			case json.length:
+				builder.WriteString("json_array_length(" + stmt.Quote(json.column) + ") = ")
+				builder.AddVar(stmt, json.lengthValue)
 			}
 		case "postgres":
 			switch {
@@ -558,6 +576,9 @@ func (json *JSONArrayExpression) Build(builder clause.Builder) {
 				builder.WriteString(stmt.Quote(json.column))
 				builder.WriteString(" ? ")
 				builder.AddVar(stmt, json.equalsValue)
+			case json.length:
+				builder.WriteString("array_length(" + stmt.Quote(json.column) + "::jsonb::text[], 1) = ")
+				builder.AddVar(stmt, json.lengthValue)
 			}
 		}
 	}
