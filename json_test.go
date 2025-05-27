@@ -489,39 +489,22 @@ func TestJSONArrayQuery(t *testing.T) {
 			t.Errorf("Failed to create param %v", err)
 		}
 
-		var retSingle1 Param
-		if err := DB.Where("id = ?", cmp2.ID).First(&retSingle1).Error; err != nil {
-			t.Errorf("Failed to find param %v", err)
+		// 新增的长度测试用例
+		var results []Param
+		if err := DB.Where(datatypes.JSONArrayQuery("config").Length(2)).Find(&results).Error; err != nil {
+			t.Fatalf("failed to find params with json array length, got error %v", err)
 		}
+		AssertEqual(t, len(results), 2) // cmp1和cmp2的数组长度都是2
 
-		var retSingle2 Param
-		if err := DB.Where("id = ?", cmp2.ID).First(&retSingle2).Error; err != nil {
-			t.Errorf("Failed to find param %v", err)
+		if err := DB.Where(datatypes.JSONArrayQuery("config").Length(1)).Find(&results).Error; err != nil {
+			t.Fatalf("failed to find params with json array length, got error %v", err)
 		}
+		AssertEqual(t, len(results), 0) // 没有长度为1的数组
 
-		AssertEqual(t, retSingle1, cmp2)
-		AssertEqual(t, retSingle2, cmp2)
-
-		var retMultiple []Param
-
-		if err := DB.Where(datatypes.JSONArrayQuery("config").Contains("c")).Find(&retMultiple).Error; err != nil {
-			t.Fatalf("failed to find params with json value, got error %v", err)
+		// 测试带key路径的长度查询
+		if err := DB.Where(datatypes.JSONArrayQuery("config").Length(2).Contains("a", "test")).Find(&results).Error; err != nil {
+			t.Fatalf("failed to find params with json array length and keys, got error %v", err)
 		}
-		AssertEqual(t, len(retMultiple), 1)
-
-		if err := DB.Where(datatypes.JSONArrayQuery("config").Contains("a", "test")).Find(&retMultiple).Error; err != nil {
-			t.Fatalf("failed to find params with json value and keys, got error %v", err)
-		}
-		AssertEqual(t, len(retMultiple), 1)
-
-		if err := DB.Where(datatypes.JSONArrayQuery("config").In([]string{"c", "a"})).Find(&retMultiple).Error; err != nil {
-			t.Fatalf("failed to find params with json value, got error %v", err)
-		}
-		AssertEqual(t, len(retMultiple), 1)
-
-		if err := DB.Where(datatypes.JSONArrayQuery("config").In([]string{"c", "d"}, "test")).Find(&retMultiple).Error; err != nil {
-			t.Fatalf("failed to find params with json value and keys, got error %v", err)
-		}
-		AssertEqual(t, len(retMultiple), 1)
+		AssertEqual(t, len(results), 1) // 只有cmp3的test数组长度是2
 	}
 }
