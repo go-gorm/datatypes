@@ -489,6 +489,41 @@ func TestJSONArrayQuery(t *testing.T) {
 			t.Errorf("Failed to create param %v", err)
 		}
 
+		var retSingle1 Param
+		if err := DB.Where("id = ?", cmp2.ID).First(&retSingle1).Error; err != nil {
+			t.Errorf("Failed to find param %v", err)
+		}
+
+		var retSingle2 Param
+		if err := DB.Where("id = ?", cmp2.ID).First(&retSingle2).Error; err != nil {
+			t.Errorf("Failed to find param %v", err)
+		}
+
+		AssertEqual(t, retSingle1, cmp2)
+		AssertEqual(t, retSingle2, cmp2)
+
+		var retMultiple []Param
+
+		if err := DB.Where(datatypes.JSONArrayQuery("config").Contains("c")).Find(&retMultiple).Error; err != nil {
+			t.Fatalf("failed to find params with json value, got error %v", err)
+		}
+		AssertEqual(t, len(retMultiple), 1)
+
+		if err := DB.Where(datatypes.JSONArrayQuery("config").Contains("a", "test")).Find(&retMultiple).Error; err != nil {
+			t.Fatalf("failed to find params with json value and keys, got error %v", err)
+		}
+		AssertEqual(t, len(retMultiple), 1)
+
+		if err := DB.Where(datatypes.JSONArrayQuery("config").In([]string{"c", "a"})).Find(&retMultiple).Error; err != nil {
+			t.Fatalf("failed to find params with json value, got error %v", err)
+		}
+		AssertEqual(t, len(retMultiple), 1)
+
+		if err := DB.Where(datatypes.JSONArrayQuery("config").In([]string{"c", "d"}, "test")).Find(&retMultiple).Error; err != nil {
+			t.Fatalf("failed to find params with json value and keys, got error %v", err)
+		}
+		AssertEqual(t, len(retMultiple), 1)
+
 		// 新增的长度测试用例
 		var results []Param
 		if err := DB.Where(datatypes.JSONArrayQuery("config").Length(2)).Find(&results).Error; err != nil {
