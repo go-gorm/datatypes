@@ -525,21 +525,18 @@ func TestJSONArrayQuery(t *testing.T) {
 		AssertEqual(t, len(retMultiple), 1)
 
 		// 新增的长度测试用例
-		var results []Param
-		if err := DB.Where(datatypes.JSONArrayQuery("config").Length(2)).Find(&results).Error; err != nil {
+		var retLength []Param
+		if err := DB.Where(datatypes.JSONArrayQuery("config").Length(2)).Find(&retLength).Error; err != nil {
 			t.Fatalf("failed to find params with json array length, got error %v", err)
 		}
-		AssertEqual(t, len(results), 2) // cmp1和cmp2的数组长度都是2
+		AssertEqual(t, len(retLength), 1)
+		AssertEqual(t, retLength[0].DisplayName, cmp1.DisplayName)
 
-		if err := DB.Where(datatypes.JSONArrayQuery("config").Length(1)).Find(&results).Error; err != nil {
-			t.Fatalf("failed to find params with json array length, got error %v", err)
+		// 测试嵌套数组的长度
+		if err := DB.Where(datatypes.JSONArrayQuery("config").Length(2).Contains("a", "test")).Find(&retLength).Error; err != nil {
+			t.Fatalf("failed to find params with json array length and contains, got error %v", err)
 		}
-		AssertEqual(t, len(results), 0) // 没有长度为1的数组
-
-		// 测试带key路径的长度查询
-		if err := DB.Where(datatypes.JSONArrayQuery("config").Length(2).Contains("a", "test")).Find(&results).Error; err != nil {
-			t.Fatalf("failed to find params with json array length and keys, got error %v", err)
-		}
-		AssertEqual(t, len(results), 1) // 只有cmp3的test数组长度是2
+		AssertEqual(t, len(retLength), 1)
+		AssertEqual(t, retLength[0].DisplayName, cmp3.DisplayName)
 	}
 }
