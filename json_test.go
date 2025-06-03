@@ -523,5 +523,20 @@ func TestJSONArrayQuery(t *testing.T) {
 			t.Fatalf("failed to find params with json value and keys, got error %v", err)
 		}
 		AssertEqual(t, len(retMultiple), 1)
+
+		// 新增的长度测试用例
+		var retLength []Param
+		if err := DB.Where(datatypes.JSONArrayQuery("config").Length(2)).Find(&retLength).Error; err != nil {
+			t.Fatalf("failed to find params with json array length, got error %v", err)
+		}
+		AssertEqual(t, len(retLength), 1)
+		AssertEqual(t, retLength[0].DisplayName, cmp1.DisplayName)
+
+		// 测试嵌套数组的长度
+		if err := DB.Where(datatypes.JSONArrayQuery("config").Length(2).Contains("a", "test")).Find(&retLength).Error; err != nil {
+			t.Fatalf("failed to find params with json array length and contains, got error %v", err)
+		}
+		AssertEqual(t, len(retLength), 1)
+		AssertEqual(t, retLength[0].DisplayName, cmp3.DisplayName)
 	}
 }
