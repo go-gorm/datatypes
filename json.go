@@ -305,6 +305,9 @@ const prefix = "$."
 
 func jsonQueryJoin(keys []string) string {
 	if len(keys) == 1 {
+		if keys[0] == "$" {
+			return "$"
+		}
 		return prefix + keys[0]
 	}
 
