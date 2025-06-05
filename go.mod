@@ -7,7 +7,7 @@ require (
 	github.com/jinzhu/now v1.1.5
 	gorm.io/driver/mysql v1.5.6
 	gorm.io/driver/postgres v1.5.0
-	gorm.io/driver/sqlite v1.4.3
+	gorm.io/driver/sqlite v1.6.0
 	gorm.io/driver/sqlserver v1.6.0
 	gorm.io/gorm v1.30.0
 )
@@ -22,7 +22,7 @@ require (
 	github.com/jackc/pgx/v5 v5.5.5 // indirect
 	github.com/jackc/puddle/v2 v2.2.1 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
-	github.com/mattn/go-sqlite3 v1.14.15 // indirect
+	github.com/mattn/go-sqlite3 v1.14.22 // indirect
 	github.com/microsoft/go-mssqldb v1.7.2 // indirect
 	golang.org/x/crypto v0.23.0 // indirect
 	golang.org/x/sync v0.9.0 // indirect
