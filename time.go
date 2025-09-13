@@ -60,7 +60,7 @@ func (t *Time) Scan(src interface{}) error {
 	case time.Time:
 		t.setFromTime(v)
 	default:
-		return errors.New(fmt.Sprintf("failed to scan value: %v", v))
+		return fmt.Errorf("failed to scan value: %v", v)
 	}
 
 	return nil
