@@ -216,3 +216,32 @@ func TestJSONSlice(t *testing.T) {
 		}
 	}
 }
+
+// TestJSONTypeValueTypes tests that JSONType and JSONSlice return json.RawMessage from Value() method
+// This is required for MySQL driver interpolateParams=true compatibility to avoid error 3144
+func TestJSONTypeValueTypes(t *testing.T) {
+	type TestStruct struct {
+		Name string `json:"name"`
+		Age  int    `json:"age"`
+	}
+
+	// Test JSONType[T]
+	jsonType := datatypes.NewJSONType(TestStruct{Name: "test", Age: 25})
+	value, err := jsonType.Value()
+	if err != nil {
+		t.Errorf("JSONType.Value() error: %v", err)
+	}
+	if _, ok := value.(string); !ok {
+		t.Errorf("JSONType.Value() should return string, got %T", value)
+	}
+
+	// Test JSONSlice[T]
+	jsonSlice := datatypes.NewJSONSlice([]string{"item1", "item2"})
+	sliceValue, err := jsonSlice.Value()
+	if err != nil {
+		t.Errorf("JSONSlice.Value() error: %v", err)
+	}
+	if _, ok := sliceValue.(string); !ok {
+		t.Errorf("JSONSlice.Value() should return string, got %T", sliceValue)
+	}
+}
