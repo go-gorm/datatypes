@@ -182,3 +182,27 @@ func TestJSONMap_Scan(t *testing.T) {
 	}
 	AssertEqual(t, obj["user_id"], 1085238870184050699)
 }
+
+// TestJSONMapValueType tests that JSONMap returns json.RawMessage from Value() method
+// This is required for MySQL driver interpolateParams=true compatibility to avoid error 3144
+func TestJSONMapValueType(t *testing.T) {
+	// Test JSONMap
+	jsonMap := datatypes.JSONMap{"key": "value", "number": 42}
+	value, err := jsonMap.Value()
+	if err != nil {
+		t.Errorf("JSONMap.Value() error: %v", err)
+	}
+	if _, ok := value.(json.RawMessage); !ok {
+		t.Errorf("JSONMap.Value() should return json.RawMessage, got %T", value)
+	}
+
+	// Test empty JSONMap
+	var emptyMap datatypes.JSONMap
+	emptyValue, err := emptyMap.Value()
+	if err != nil {
+		t.Errorf("Empty JSONMap.Value() error: %v", err)
+	}
+	if emptyValue != nil {
+		t.Errorf("Empty JSONMap.Value() should return nil, got %v", emptyValue)
+	}
+}

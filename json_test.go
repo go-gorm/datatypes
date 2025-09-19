@@ -525,3 +525,27 @@ func TestJSONArrayQuery(t *testing.T) {
 		AssertEqual(t, len(retMultiple), 1)
 	}
 }
+
+// TestJSONValueTypes tests that all JSON types return json.RawMessage from Value() method
+// This is required for MySQL driver interpolateParams=true compatibility to avoid error 3144
+func TestJSONValueTypes(t *testing.T) {
+	// Test JSON type
+	jsonData := datatypes.JSON(`{"test": "value"}`)
+	value, err := jsonData.Value()
+	if err != nil {
+		t.Errorf("JSON.Value() error: %v", err)
+	}
+	if _, ok := value.(json.RawMessage); !ok {
+		t.Errorf("JSON.Value() should return json.RawMessage, got %T", value)
+	}
+
+	// Test empty JSON
+	emptyJSON := datatypes.JSON("")
+	emptyValue, err := emptyJSON.Value()
+	if err != nil {
+		t.Errorf("Empty JSON.Value() error: %v", err)
+	}
+	if emptyValue != nil {
+		t.Errorf("Empty JSON.Value() should return nil, got %v", emptyValue)
+	}
+}

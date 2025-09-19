@@ -2,6 +2,7 @@ package datatypes_test
 
 import (
 	"database/sql/driver"
+	"encoding/json"
 	"testing"
 
 	"gorm.io/datatypes"
@@ -214,5 +215,34 @@ func TestJSONSlice(t *testing.T) {
 		if err := DB.Model(&result3).Updates(jsonMap).Error; err != nil {
 			t.Errorf("failed to run Updates")
 		}
+	}
+}
+
+// TestJSONTypeValueTypes tests that JSONType and JSONSlice return json.RawMessage from Value() method
+// This is required for MySQL driver interpolateParams=true compatibility to avoid error 3144
+func TestJSONTypeValueTypes(t *testing.T) {
+	type TestStruct struct {
+		Name string `json:"name"`
+		Age  int    `json:"age"`
+	}
+
+	// Test JSONType[T]
+	jsonType := datatypes.NewJSONType(TestStruct{Name: "test", Age: 25})
+	value, err := jsonType.Value()
+	if err != nil {
+		t.Errorf("JSONType.Value() error: %v", err)
+	}
+	if _, ok := value.(json.RawMessage); !ok {
+		t.Errorf("JSONType.Value() should return json.RawMessage, got %T", value)
+	}
+
+	// Test JSONSlice[T]
+	jsonSlice := datatypes.NewJSONSlice([]string{"item1", "item2"})
+	sliceValue, err := jsonSlice.Value()
+	if err != nil {
+		t.Errorf("JSONSlice.Value() error: %v", err)
+	}
+	if _, ok := sliceValue.(json.RawMessage); !ok {
+		t.Errorf("JSONSlice.Value() should return json.RawMessage, got %T", sliceValue)
 	}
 }
