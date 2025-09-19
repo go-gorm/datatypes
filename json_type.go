@@ -36,7 +36,7 @@ func (j JSONType[T]) Value() (driver.Value, error) {
 	if err != nil {
 		return nil, err
 	}
-	return json.RawMessage(data), nil
+	return string(data), nil
 }
 
 // Scan scan value into JSONType[T], implements sql.Scanner interface
@@ -107,7 +107,7 @@ func (j JSONSlice[T]) Value() (driver.Value, error) {
 	if err != nil {
 		return nil, err
 	}
-	return json.RawMessage(data), nil
+	return string(data), nil
 }
 
 // Scan scan value into JSONType[T], implements sql.Scanner interface

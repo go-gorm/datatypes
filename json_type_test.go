@@ -2,7 +2,6 @@ package datatypes_test
 
 import (
 	"database/sql/driver"
-	"encoding/json"
 	"testing"
 
 	"gorm.io/datatypes"
@@ -232,8 +231,8 @@ func TestJSONTypeValueTypes(t *testing.T) {
 	if err != nil {
 		t.Errorf("JSONType.Value() error: %v", err)
 	}
-	if _, ok := value.(json.RawMessage); !ok {
-		t.Errorf("JSONType.Value() should return json.RawMessage, got %T", value)
+	if _, ok := value.(string); !ok {
+		t.Errorf("JSONType.Value() should return string, got %T", value)
 	}
 
 	// Test JSONSlice[T]
@@ -242,7 +241,7 @@ func TestJSONTypeValueTypes(t *testing.T) {
 	if err != nil {
 		t.Errorf("JSONSlice.Value() error: %v", err)
 	}
-	if _, ok := sliceValue.(json.RawMessage); !ok {
-		t.Errorf("JSONSlice.Value() should return json.RawMessage, got %T", sliceValue)
+	if _, ok := sliceValue.(string); !ok {
+		t.Errorf("JSONSlice.Value() should return string, got %T", sliceValue)
 	}
 }
