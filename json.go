@@ -25,7 +25,7 @@ func (j JSON) Value() (driver.Value, error) {
 	if len(j) == 0 {
 		return nil, nil
 	}
-	return string(j), nil
+	return json.RawMessage(j), nil
 }
 
 // Scan scan value into Jsonb, implements sql.Scanner interface

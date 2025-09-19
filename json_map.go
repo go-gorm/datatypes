@@ -24,7 +24,10 @@ func (m JSONMap) Value() (driver.Value, error) {
 		return nil, nil
 	}
 	ba, err := m.MarshalJSON()
-	return string(ba), err
+	if err != nil {
+		return nil, err
+	}
+	return json.RawMessage(ba), nil
 }
 
 // Scan scan value into Jsonb, implements sql.Scanner interface
