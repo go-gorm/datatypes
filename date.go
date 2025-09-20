@@ -17,7 +17,7 @@ func (date *Date) Scan(value interface{}) (err error) {
 
 func (date Date) Value() (driver.Value, error) {
 	y, m, d := time.Time(date).Date()
-	return time.Date(y, m, d, 0, 0, 0, 0, time.Time(date).Location()), nil
+	return time.Date(y, m, d, 0, 0, 0, 0, time.UTC), nil
 }
 
 // GormDataType gorm common data type
