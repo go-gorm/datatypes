@@ -63,7 +63,10 @@ func (m JSONMap) MarshalJSON() ([]byte, error) {
 // UnmarshalJSON to deserialize []byte
 func (m *JSONMap) UnmarshalJSON(b []byte) error {
 	t := map[string]interface{}{}
-	err := json.Unmarshal(b, &t)
+	rd := bytes.NewReader(b)
+	decoder := json.NewDecoder(rd)
+	decoder.UseNumber()
+	err := decoder.Decode(&t)
 	*m = JSONMap(t)
 	return err
 }
