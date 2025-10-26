@@ -183,6 +183,16 @@ func TestJSONMap_Scan(t *testing.T) {
 	AssertEqual(t, obj["user_id"], 1085238870184050699)
 }
 
+func TestJSONMap_Unmarshal(t *testing.T) {
+	content := `{"user_id": 1085238870184050699, "name": "Name of user"}`
+	obj := make(datatypes.JSONMap)
+	err := obj.UnmarshalJSON([]byte(content))
+	if err != nil {
+		t.Fatalf("decode error %v", err)
+	}
+	AssertEqual(t, obj["user_id"], 1085238870184050699)
+}
+
 // TestJSONMapValueType tests the return type from JSONMap Value() method
 func TestJSONMapValueType(t *testing.T) {
 	// Test JSONMap
