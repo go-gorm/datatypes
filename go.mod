@@ -1,6 +1,6 @@
 module gorm.io/datatypes
 
-go 1.19
+go 1.24.0
 
 require (
 	github.com/google/uuid v1.6.0
@@ -24,7 +24,7 @@ require (
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/mattn/go-sqlite3 v1.14.15 // indirect
 	github.com/microsoft/go-mssqldb v1.7.2 // indirect
-	golang.org/x/crypto v0.23.0 // indirect
-	golang.org/x/sync v0.9.0 // indirect
-	golang.org/x/text v0.20.0 // indirect
+	golang.org/x/crypto v0.45.0 // indirect
+	golang.org/x/sync v0.18.0 // indirect
+	golang.org/x/text v0.31.0 // indirect
 )
