@@ -37,6 +37,12 @@ func TestUUID(t *testing.T) {
 		}, {
 			Name:     "uuid-4",
 			UserUUID: datatypes.NewUUIDv4(),
+		}, {
+			Name:     "uuid-5",
+			UserUUID: datatypes.NewUUIDv7(),
+		}, {
+			Name:     "uuid-6",
+			UserUUID: datatypes.NewUUIDv7(),
 		}}
 
 		if err := DB.Create(&users).Error; err != nil {
@@ -122,6 +128,8 @@ func TestUUIDPtr(t *testing.T) {
 		uuid2 := datatypes.NewUUIDv1()
 		uuid3 := datatypes.NewUUIDv4()
 		uuid4 := datatypes.NewUUIDv4()
+		uuid5 := datatypes.NewUUIDv7()
+		uuid6 := datatypes.NewUUIDv7()
 
 		users := []UserWithUUIDPtr{{
 			Name:     "uuid-1",
@@ -135,6 +143,12 @@ func TestUUIDPtr(t *testing.T) {
 		}, {
 			Name:     "uuid-4",
 			UserUUID: &uuid4,
+		}, {
+			Name:     "uuid-5",
+			UserUUID: &uuid5,
+		}, {
+			Name:     "uuid-6",
+			UserUUID: &uuid6,
 		}}
 
 		if err := DB.Create(&users).Error; err != nil {
