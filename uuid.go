@@ -22,6 +22,11 @@ func NewUUIDv4() UUID {
 	return UUID(uuid.Must(uuid.NewRandom()))
 }
 
+// NewUUIDv7 generates a UUID version 7, panics on generation failure.
+func NewUUIDv7() UUID {
+	return UUID(uuid.Must(uuid.NewV7()))
+}
+
 // GormDataType gorm common data type.
 func (UUID) GormDataType() string {
 	return "string"

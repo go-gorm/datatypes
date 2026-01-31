@@ -298,6 +298,10 @@ type UserWithUUID struct {
 // Generate a new random UUID (version 4).
 userUUID := datatypes.NewUUIDv4()
 
+// Generate a new time-ordered UUID (version 7).
+// UUIDv7 is recommended for new applications as it's sortable by creation time.
+userUUIDv7 := datatypes.NewUUIDv7()
+
 user := UserWithUUID{Name: "jinzhu", UserUUID: userUUID}
 DB.Create(&user)
 // INSERT INTO `user_with_uuids` (`name`,`user_uuid`) VALUES ("jinzhu","ca95a578-816c-4812-babd-a7602b042460")
