@@ -103,6 +103,9 @@ func NewJSONSlice[T any](s []T) JSONSlice[T] {
 
 // Value return json value, implement driver.Valuer interface
 func (j JSONSlice[T]) Value() (driver.Value, error) {
+	if j == nil {
+		return nil, nil
+	}
 	data, err := json.Marshal(j)
 	if err != nil {
 		return nil, err
@@ -112,6 +115,10 @@ func (j JSONSlice[T]) Value() (driver.Value, error) {
 
 // Scan scan value into JSONType[T], implements sql.Scanner interface
 func (j *JSONSlice[T]) Scan(value interface{}) error {
+	if value == nil {
+		*j = nil
+		return nil
+	}
 	var bytes []byte
 	switch v := value.(type) {
 	case []byte:
@@ -143,6 +150,9 @@ func (JSONSlice[T]) GormDBDataType(db *gorm.DB, field *schema.Field) string {
 }
 
 func (j JSONSlice[T]) GormValue(ctx context.Context, db *gorm.DB) clause.Expr {
+	if j == nil {
+		return gorm.Expr("NULL")
+	}
 	data, _ := json.Marshal(j)
 
 	switch db.Dialector.Name() {
