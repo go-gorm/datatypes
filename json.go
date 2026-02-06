@@ -11,7 +11,6 @@ import (
 	"strings"
 	"sync"
 
-	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 	"gorm.io/gorm/schema"
@@ -91,6 +90,24 @@ func (JSON) GormDBDataType(db *gorm.DB, field *schema.Field) string {
 	return ""
 }
 
+// isMariaDB checks whether the dialector is MySQL-compatible and connected
+// to MariaDB, using reflection to avoid a compile-time dependency on
+// gorm.io/driver/mysql.
+func isMariaDB(dialector gorm.Dialector) bool {
+	if dialector.Name() != "mysql" {
+		return false
+	}
+	v := reflect.ValueOf(dialector)
+	if v.Kind() == reflect.Ptr {
+		v = v.Elem()
+	}
+	f := v.FieldByName("ServerVersion")
+	if f.IsValid() && f.Kind() == reflect.String {
+		return strings.Contains(f.String(), "MariaDB")
+	}
+	return false
+}
+
 func (js JSON) GormValue(ctx context.Context, db *gorm.DB) clause.Expr {
 	if len(js) == 0 {
 		return gorm.Expr("NULL")
@@ -100,7 +117,7 @@ func (js JSON) GormValue(ctx context.Context, db *gorm.DB) clause.Expr {
 
 	switch db.Dialector.Name() {
 	case "mysql":
-		if v, ok := db.Dialector.(*mysql.Dialector); ok && !strings.Contains(v.ServerVersion, "MariaDB") {
+		if !isMariaDB(db.Dialector) {
 			return gorm.Expr("CAST(? AS JSON)", string(data))
 		}
 	}
@@ -369,10 +386,7 @@ func (jsonSet *JSONSetExpression) Build(builder clause.Builder) {
 		switch stmt.Dialector.Name() {
 		case "mysql":
 
-			var isMariaDB bool
-			if v, ok := stmt.Dialector.(*mysql.Dialector); ok {
-				isMariaDB = strings.Contains(v.ServerVersion, "MariaDB")
-			}
+			mariaDB := isMariaDB(stmt.Dialector)
 
 			builder.WriteString("JSON_SET(")
 			builder.WriteQuoted(jsonSet.column)
@@ -393,7 +407,7 @@ func (jsonSet *JSONSetExpression) Build(builder clause.Builder) {
 				switch rv.Kind() {
 				case reflect.Slice, reflect.Array, reflect.Struct, reflect.Map:
 					b, _ := json.Marshal(value)
-					if isMariaDB {
+					if mariaDB {
 						stmt.AddVar(builder, string(b))
 						break
 					}
