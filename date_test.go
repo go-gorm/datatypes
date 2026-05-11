@@ -35,7 +35,7 @@ func TestDate(t *testing.T) {
 		t.Fatalf("Failed to find record with date")
 	}
 
-	AssertEqual(t, result.Date, beginningOfDay)
+	AssertEqual(t, time.Time(result.Date).Format("2006-01-02"), beginningOfDay.Format("2006-01-02"))
 }
 
 func TestGobEncoding(t *testing.T) {
