@@ -164,6 +164,8 @@ func TestJSONSlice(t *testing.T) {
 		}, {
 			Name: "json-4",
 			Tags: datatypes.NewJSONSlice(tags),
+		}, {
+			Name: "json-5", // nil slice: must persist as SQL NULL, not the string "null"
 		}}
 
 		if err := DB.Create(&users).Error; err != nil {
@@ -196,6 +198,21 @@ func TestJSONSlice(t *testing.T) {
 		}
 		AssertEqual(t, len(row.Tags), 2)
 		AssertEqual(t, row.Tags[0].Name, "tag1")
+
+		// nil slice is stored as SQL NULL (issue #314) and scans back as nil
+		var nilTagsCount int64
+		if err := DB.Model(&UserWithJSON{}).Where("name = ? AND tags IS NULL", "json-5").Count(&nilTagsCount).Error; err != nil {
+			t.Fatalf("failed to count rows with NULL tags, got error %v", err)
+		}
+		AssertEqual(t, nilTagsCount, int64(1))
+
+		var nilResult UserWithJSON
+		if err := DB.Where("name = ?", "json-5").First(&nilResult).Error; err != nil {
+			t.Fatalf("failed to find user with nil tags, got error %v", err)
+		}
+		if nilResult.Tags != nil {
+			t.Errorf("expected nil Tags after round-trip, got %#v", nilResult.Tags)
+		}
 
 		// FirstOrCreate
 		jsonMap := UserWithJSON{
@@ -243,5 +260,15 @@ func TestJSONTypeValueTypes(t *testing.T) {
 	}
 	if _, ok := sliceValue.(string); !ok {
 		t.Errorf("JSONSlice.Value() should return string, got %T", sliceValue)
+	}
+
+	// Test nil JSONSlice[T] — returns SQL NULL, not the string "null" (issue #314)
+	var nilSlice datatypes.JSONSlice[string]
+	nilValue, err := nilSlice.Value()
+	if err != nil {
+		t.Errorf("nil JSONSlice.Value() error: %v", err)
+	}
+	if nilValue != nil {
+		t.Errorf("nil JSONSlice.Value() should return nil, got %v", nilValue)
 	}
 }
