@@ -170,7 +170,7 @@ func TestJSONSliceScan(t *testing.T) {
 		}
 
 		var retSingle1 Param
-		if err := DB.Where("id = ?", cmp2.ID).First(&retSingle1).Error; err != nil {
+		if err := DB.Where("id = ?", cmp1.ID).First(&retSingle1).Error; err != nil {
 			t.Errorf("Failed to find param %v", err)
 		}
 
@@ -179,7 +179,7 @@ func TestJSONSliceScan(t *testing.T) {
 			t.Errorf("Failed to find param %v", err)
 		}
 
-		AssertEqual(t, retSingle1, cmp2)
+		AssertEqual(t, retSingle1, cmp1)
 		AssertEqual(t, retSingle2, cmp2)
 
 		var retMultiple []Param
@@ -187,8 +187,9 @@ func TestJSONSliceScan(t *testing.T) {
 			t.Errorf("Failed to find param %v", err)
 		}
 
-		AssertEqual(t, retSingle1, cmp2)
-		AssertEqual(t, retSingle2, cmp2)
+		AssertEqual(t, len(retMultiple), 2)
+		AssertEqual(t, retMultiple[0], cmp1)
+		AssertEqual(t, retMultiple[1], cmp2)
 	}
 }
 
