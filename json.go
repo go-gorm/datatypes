@@ -501,7 +501,18 @@ func (json *JSONArrayExpression) Build(builder clause.Builder) {
 			switch {
 			case json.contains:
 				builder.WriteString("JSON_CONTAINS(" + stmt.Quote(json.column) + ",JSON_ARRAY(")
-				builder.AddVar(stmt, json.equalsValue)
+				value := reflect.ValueOf(json.equalsValue)
+				_, isValuer := json.equalsValue.(driver.Valuer)
+				if value.IsValid() && (value.Kind() == reflect.Slice || value.Kind() == reflect.Array) && value.Type().Elem().Kind() != reflect.Uint8 && !isValuer {
+					for i := 0; i < value.Len(); i++ {
+						if i > 0 {
+							builder.WriteByte(',')
+						}
+						builder.AddVar(stmt, value.Index(i).Interface())
+					}
+				} else {
+					builder.AddVar(stmt, json.equalsValue)
+				}
 				builder.WriteByte(')')
 				if len(json.keys) > 0 {
 					builder.WriteByte(',')
