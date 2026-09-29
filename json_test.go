@@ -527,6 +527,42 @@ func TestJSONArrayQuery(t *testing.T) {
 	}
 }
 
+func TestJSONArrayContainsMySQLSlice(t *testing.T) {
+	db, err := gorm.Open(mysql.New(mysql.Config{
+		DSN:                       "gorm:gorm@tcp(localhost:9910)/gorm",
+		SkipInitializeWithVersion: true,
+	}), &gorm.Config{DryRun: true, DisableAutomaticPing: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tests := []struct {
+		name  string
+		value interface{}
+		sql   string
+		vars  []interface{}
+	}{
+		{"interface slice", []interface{}{1, 2}, "JSON_ARRAY(?,?)", []interface{}{1, 2}},
+		{"typed slice", []string{"a", "b"}, "JSON_ARRAY(?,?)", []interface{}{"a", "b"}},
+		{"array", [2]int{1, 2}, "JSON_ARRAY(?,?)", []interface{}{1, 2}},
+		{"empty slice", []int{}, "JSON_ARRAY()", nil},
+		{"bytes stay scalar", []byte("ab"), "JSON_ARRAY(?)", []interface{}{[]byte("ab")}},
+		{"scalar", "a", "JSON_ARRAY(?)", []interface{}{"a"}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := db.Table("items").Where(datatypes.JSONArrayQuery("config").Contains(tt.value)).Find(&[]struct{}{})
+			if result.Error != nil {
+				t.Fatal(result.Error)
+			}
+			if !strings.Contains(result.Statement.SQL.String(), tt.sql) {
+				t.Errorf("SQL = %q, want %q", result.Statement.SQL.String(), tt.sql)
+			}
+			AssertEqual(t, result.Statement.Vars, tt.vars)
+		})
+	}
+}
+
 // TestJSONValueTypes tests the return types from JSON Value() methods
 func TestJSONValueTypes(t *testing.T) {
 	// Test JSON type
