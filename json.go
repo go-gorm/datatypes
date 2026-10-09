@@ -86,6 +86,8 @@ func (JSON) GormDBDataType(db *gorm.DB, field *schema.Field) string {
 		return "JSON"
 	case "postgres":
 		return "JSONB"
+	case "bigquery":
+		return "JSON"
 	}
 	return ""
 }
@@ -120,6 +122,8 @@ func (js JSON) GormValue(ctx context.Context, db *gorm.DB) clause.Expr {
 		if !isMariaDB(db.Dialector) {
 			return gorm.Expr("CAST(? AS JSON)", string(data))
 		}
+	case "bigquery":
+		return gorm.Expr("PARSE_JSON(?)", string(data))
 	}
 
 	return gorm.Expr("?", string(data))

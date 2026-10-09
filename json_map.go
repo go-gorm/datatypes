@@ -84,6 +84,8 @@ func (JSONMap) GormDBDataType(db *gorm.DB, field *schema.Field) string {
 		return "JSONB"
 	case "sqlserver":
 		return "NVARCHAR(MAX)"
+	case "bigquery":
+		return "JSON"
 	}
 	return ""
 }
@@ -95,6 +97,8 @@ func (jm JSONMap) GormValue(ctx context.Context, db *gorm.DB) clause.Expr {
 		if !isMariaDB(db.Dialector) {
 			return gorm.Expr("CAST(? AS JSON)", string(data))
 		}
+	case "bigquery":
+		return gorm.Expr("PARSE_JSON(?)", string(data))
 	}
 	return gorm.Expr("?", string(data))
 }
