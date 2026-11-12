@@ -127,6 +127,43 @@ func TestJSONType(t *testing.T) {
 		if err := DB.Model(&result3).Updates(jsonMap).Error; err != nil {
 			t.Errorf("failed to run FirstOrCreate")
 		}
+
+		// NULL column scans into the zero value
+		if err := DB.Model(&UserWithJSON{}).Where("name = ?", "json-5").Update("attributes", nil).Error; err != nil {
+			t.Fatalf("failed to set attributes to NULL, got error %v", err)
+		}
+		var nullResult UserWithJSON
+		if err := DB.Where("name = ?", "json-5").First(&nullResult).Error; err != nil {
+			t.Fatalf("failed to find user with NULL attributes, got error %v", err)
+		}
+		AssertEqual(t, nullResult.Attributes.Data(), Attribute{})
+
+		var nullAttr datatypes.JSONType[Attribute]
+		if err := DB.Model(&UserWithJSON{}).Where("name = ?", "json-5").Pluck("attributes", &nullAttr).Error; err != nil {
+			t.Fatalf("failed to pluck NULL attributes, got error %v", err)
+		}
+		AssertEqual(t, nullAttr.Data(), Attribute{})
+
+		nullAttr = datatypes.NewJSONType(Attribute{Age: 1})
+		if err := DB.Model(&UserWithJSON{}).Select("attributes").Where("name = ?", "json-5").Row().Scan(&nullAttr); err != nil {
+			t.Fatalf("failed to scan NULL attributes, got error %v", err)
+		}
+		AssertEqual(t, nullAttr.Data(), Attribute{})
+	}
+}
+
+func TestJSONTypeScanNull(t *testing.T) {
+	type TestStruct struct {
+		Name string `json:"name"`
+		Age  int    `json:"age"`
+	}
+
+	jsonType := datatypes.NewJSONType(TestStruct{Name: "test", Age: 25})
+	if err := jsonType.Scan(nil); err != nil {
+		t.Errorf("JSONType.Scan(nil) error: %v", err)
+	}
+	if jsonType.Data() != (TestStruct{}) {
+		t.Errorf("JSONType.Scan(nil) should reset to the zero value, got %+v", jsonType.Data())
 	}
 }
 

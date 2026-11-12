@@ -38,6 +38,11 @@ func (j JSONType[T]) Value() (driver.Value, error) {
 
 // Scan scan value into JSONType[T], implements sql.Scanner interface
 func (j *JSONType[T]) Scan(value interface{}) error {
+	if value == nil {
+		var zero T
+		j.data = zero
+		return nil
+	}
 	var bytes []byte
 	switch v := value.(type) {
 	case []byte:
