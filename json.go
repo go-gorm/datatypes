@@ -477,7 +477,7 @@ type JSONArrayExpression struct {
 	equalsValue interface{}
 }
 
-// Contains checks if column[keys] contains the value given. The keys parameter is only supported for MySQL and SQLite.
+// Contains checks if column[keys] contains the value given. This method is only supported for MySQL, SQLite and PostgreSQL.
 func (json *JSONArrayExpression) Contains(value interface{}, keys ...string) *JSONArrayExpression {
 	json.contains = true
 	json.equalsValue = value
@@ -485,7 +485,7 @@ func (json *JSONArrayExpression) Contains(value interface{}, keys ...string) *JS
 	return json
 }
 
-// In checks if columns[keys] is in the array value given. This method is only supported for MySQL and SQLite.
+// In checks if columns[keys] is in the array value given. This method is only supported for MySQL, SQLite and PostgreSQL.
 func (json *JSONArrayExpression) In(value interface{}, keys ...string) *JSONArrayExpression {
 	json.in = true
 	json.keys = keys
@@ -573,10 +573,41 @@ func (json *JSONArrayExpression) Build(builder clause.Builder) {
 		case "postgres":
 			switch {
 			case json.contains:
-				builder.WriteString(stmt.Quote(json.column))
-				builder.WriteString(" ? ")
-				builder.AddVar(stmt, json.equalsValue)
+				json.writePostgresTarget(stmt)
+				builder.WriteString(" @> ")
+				builder.AddVar(stmt, jsonbParam(stmt, []interface{}{json.equalsValue}))
+				builder.WriteString("::jsonb")
+			case json.in:
+				builder.AddVar(stmt, jsonbParam(stmt, json.equalsValue))
+				builder.WriteString("::jsonb @> ")
+				json.writePostgresTarget(stmt)
 			}
 		}
 	}
+}
+
+// writePostgresTarget writes column[keys] as a jsonb expression
+func (json *JSONArrayExpression) writePostgresTarget(stmt *gorm.Statement) {
+	if len(json.keys) == 0 {
+		stmt.WriteQuoted(json.column)
+		stmt.WriteString("::jsonb")
+		return
+	}
+	stmt.WriteByte('(')
+	stmt.WriteQuoted(json.column)
+	stmt.WriteString("::jsonb")
+	for _, key := range json.keys {
+		stmt.WriteString(" -> ")
+		stmt.AddVar(stmt, key)
+	}
+	stmt.WriteByte(')')
+}
+
+// jsonbParam encodes value as a JSON text for a ::jsonb parameter, so numbers and booleans keep their JSON type
+func jsonbParam(stmt *gorm.Statement, value interface{}) string {
+	b, err := json.Marshal(value)
+	if err != nil {
+		stmt.AddError(err)
+	}
+	return string(b)
 }
