@@ -3,6 +3,8 @@ package datatypes_test
 import (
 	"database/sql/driver"
 	"encoding/json"
+	"fmt"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -444,6 +446,149 @@ func TestJSONSet(t *testing.T) {
 			_ = json.Unmarshal(result5.Attributes, &tmp)
 			AssertEqual(t, tmp["extra"], []string{"a", "b"})
 		}
+	}
+}
+
+func TestJSONArrayAppend(t *testing.T) {
+	if !SupportedDriver("sqlite", "mysql", "postgres") {
+		t.Skip()
+	}
+
+	type UserWithJSON struct {
+		gorm.Model
+		Name       string
+		Attributes datatypes.JSON
+	}
+
+	type Friend struct {
+		Name string
+		Age  int
+	}
+
+	// assertAppend creates a row with attributes, appends values to it and
+	// compares the stored JSON with expect. An empty expect means the column
+	// must still be NULL.
+	assertAppend := func(t *testing.T, model interface{}, name string, attributes datatypes.JSON, values []interface{}, expect string) {
+		t.Helper()
+
+		var count int64
+		if err := DB.Model(model).Where("name = ? AND attributes IS NULL", name).Count(&count).Error; err != nil {
+			t.Fatalf("failed to count users, got error %v", err)
+		}
+		if (attributes == nil) != (count == 1) {
+			t.Fatalf("expect attributes NULL to be %v before append", attributes == nil)
+		}
+
+		if err := DB.Model(model).Where("name = ?", name).UpdateColumn("attributes", datatypes.JSONArrayAppend("attributes", values...)).Error; err != nil {
+			t.Fatalf("failed to append to json array, got error %v", err)
+		}
+
+		if expect == "" {
+			if err := DB.Model(model).Where("name = ? AND attributes IS NULL", name).Count(&count).Error; err != nil {
+				t.Fatalf("failed to count users, got error %v", err)
+			}
+			if count != 1 {
+				t.Errorf("expect attributes to stay NULL")
+			}
+			return
+		}
+
+		var raw string
+		if err := DB.Model(model).Select("attributes").Where("name = ?", name).Scan(&raw).Error; err != nil {
+			t.Fatalf("failed to find user, got error %v", err)
+		}
+		var actual, expected interface{}
+		if err := json.Unmarshal([]byte(raw), &actual); err != nil {
+			t.Fatalf("failed to unmarshal attributes %q, got error %v", raw, err)
+		}
+		if err := json.Unmarshal([]byte(expect), &expected); err != nil {
+			t.Fatalf("failed to unmarshal expect %q, got error %v", expect, err)
+		}
+		if !reflect.DeepEqual(actual, expected) {
+			t.Errorf("expect attributes %s, got %s", expect, raw)
+		}
+	}
+
+	DB.Migrator().DropTable(&UserWithJSON{})
+	if err := DB.Migrator().AutoMigrate(&UserWithJSON{}); err != nil {
+		t.Fatalf("failed to migrate, got error: %v", err)
+	}
+
+	var jsonExpr interface{}
+	switch DB.Dialector.Name() {
+	case "mysql":
+		jsonExpr = gorm.Expr("JSON_EXTRACT(?,'$')", `["b","c"]`)
+	case "sqlite":
+		jsonExpr = gorm.Expr("JSON(?)", `["b","c"]`)
+	case "postgres":
+		jsonExpr = gorm.Expr("?::jsonb", `["b","c"]`)
+	}
+
+	tests := []struct {
+		name       string
+		attributes datatypes.JSON // nil is stored as NULL
+		values     []interface{}
+		expect     string
+	}{
+		{"null column", nil, []interface{}{"tag1"}, `["tag1"]`},
+		{"empty array", datatypes.JSON(`[]`), []interface{}{"tag1"}, `["tag1"]`},
+		{"strings", datatypes.JSON(`["tag1"]`), []interface{}{"tag2", "标签", `a"b\c`}, `["tag1","tag2","标签","a\"b\\c"]`},
+		{"json-like strings", datatypes.JSON(`[]`), []interface{}{`[1,2]`, "true", "1", "null"}, `["[1,2]","true","1","null"]`},
+		{"numbers", datatypes.JSON(`[1]`), []interface{}{2, 3.5, -4}, `[1,2,3.5,-4]`},
+		{"bools", datatypes.JSON(`[]`), []interface{}{true, false}, `[true,false]`},
+		{"nil", datatypes.JSON(`[]`), []interface{}{nil}, `[null]`},
+		{"map", datatypes.JSON(`[{"k":"v1"}]`), []interface{}{map[string]interface{}{"k": "v2", "n": 1}}, `[{"k":"v1"},{"k":"v2","n":1}]`},
+		{"struct", datatypes.JSON(`[]`), []interface{}{Friend{Name: "Bob", Age: 21}}, `[{"Name":"Bob","Age":21}]`},
+		{"slice", datatypes.JSON(`[1]`), []interface{}{[]int{2, 3}}, `[1,[2,3]]`},
+		{"empty slice", datatypes.JSON(`[1]`), []interface{}{[]string{}}, `[1,[]]`},
+		{"nested slice", datatypes.JSON(`[]`), []interface{}{[][]string{{"a"}, {"b", "c"}}}, `[[["a"],["b","c"]]]`},
+		{"json", datatypes.JSON(`[]`), []interface{}{datatypes.JSON(`{"tags":["a"]}`)}, `[{"tags":["a"]}]`},
+		{"multiple values", nil, []interface{}{"a", 1, true, []string{"b", "c"}, map[string]string{"k": "v"}}, `["a",1,true,["b","c"],{"k":"v"}]`},
+		{"expr", datatypes.JSON(`["a"]`), []interface{}{jsonExpr}, `["a",["b","c"]]`},
+		{"no values", datatypes.JSON(`["a"]`), nil, `["a"]`},
+		{"no values on null column", nil, nil, ""},
+	}
+
+	for idx, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			name := fmt.Sprintf("json-append-%d", idx)
+			if err := DB.Create(&UserWithJSON{Name: name, Attributes: test.attributes}).Error; err != nil {
+				t.Fatalf("failed to create user, got error %v", err)
+			}
+			assertAppend(t, &UserWithJSON{}, name, test.attributes, test.values, test.expect)
+		})
+	}
+
+	t.Run("invalid value", func(t *testing.T) {
+		if err := DB.Create(&UserWithJSON{Name: "json-append-invalid", Attributes: datatypes.JSON(`["a"]`)}).Error; err != nil {
+			t.Fatalf("failed to create user, got error %v", err)
+		}
+		if err := DB.Model(&UserWithJSON{}).Where("name = ?", "json-append-invalid").UpdateColumn("attributes", datatypes.JSONArrayAppend("attributes", make(chan int))).Error; err == nil {
+			t.Fatalf("expect error when value can not be marshaled")
+		}
+		assertAppend(t, &UserWithJSON{}, "json-append-invalid", datatypes.JSON(`["a"]`), nil, `["a"]`)
+	})
+
+	if DB.Dialector.Name() == "postgres" {
+		t.Run("postgres json column", func(t *testing.T) {
+			type UserWithPlainJSON struct {
+				gorm.Model
+				Name       string
+				Attributes datatypes.JSON `gorm:"type:json"`
+			}
+
+			DB.Migrator().DropTable(&UserWithPlainJSON{})
+			if err := DB.Migrator().AutoMigrate(&UserWithPlainJSON{}); err != nil {
+				t.Fatalf("failed to migrate, got error: %v", err)
+			}
+
+			users := []UserWithPlainJSON{{Name: "json-1"}, {Name: "json-2", Attributes: datatypes.JSON(`[1]`)}}
+			if err := DB.Create(&users).Error; err != nil {
+				t.Fatalf("failed to create users, got error %v", err)
+			}
+			assertAppend(t, &UserWithPlainJSON{}, "json-1", nil, []interface{}{"a", []int{2, 3}}, `["a",[2,3]]`)
+			assertAppend(t, &UserWithPlainJSON{}, "json-2", datatypes.JSON(`[1]`), []interface{}{"a", []int{2, 3}}, `[1,"a",[2,3]]`)
+		})
 	}
 }
 

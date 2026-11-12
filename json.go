@@ -463,6 +463,109 @@ func (jsonSet *JSONSetExpression) Build(builder clause.Builder) {
 	}
 }
 
+// JSONArrayAppendExpression json array append expression, implements clause.Expression interface to use as updater
+type JSONArrayAppendExpression struct {
+	column string
+	values []interface{}
+}
+
+// JSONArrayAppend appends values to the end of the JSON array stored in column,
+// in a single UPDATE without reading the row first. A NULL column is treated as
+// an empty array. The column should hold a JSON array or NULL; appending to any
+// other JSON value is dialect specific.
+//
+// Each value is encoded with json.Marshal and appended as exactly one element,
+// so a slice is appended as a nested array and a map or struct as an object.
+// To append several elements, pass them as separate values. A clause.Expression
+// value is used as is and must evaluate to a JSON value for the dialect.
+//
+//	DB.Model(&user).UpdateColumn("attributes", datatypes.JSONArrayAppend("attributes", "tag3", []string{"a", "b"}))
+//	// MySQL
+//	// UPDATE `users` SET `attributes`=JSON_ARRAY_APPEND(COALESCE(`attributes`,JSON_ARRAY()),'$',CAST('"tag3"' AS JSON),'$',CAST('["a","b"]' AS JSON)) ...
+//	// MariaDB uses JSON_EXTRACT(?,'$') instead of CAST(? AS JSON)
+//	// SQLite
+//	// UPDATE `users` SET `attributes`=JSON_INSERT(COALESCE(`attributes`,JSON_ARRAY()),'$[#]',JSON('"tag3"'),'$[#]',JSON('["a","b"]')) ...
+//	// PostgreSQL
+//	// UPDATE "users" SET "attributes"=COALESCE("attributes"::jsonb,'[]'::jsonb) || JSONB_BUILD_ARRAY('"tag3"'::jsonb,'["a","b"]'::jsonb) ...
+func JSONArrayAppend(column string, values ...interface{}) *JSONArrayAppendExpression {
+	return &JSONArrayAppendExpression{column: column, values: values}
+}
+
+// Build implements clause.Expression
+// support mysql, sqlite and postgres
+func (jsonArrayAppend *JSONArrayAppendExpression) Build(builder clause.Builder) {
+	stmt, ok := builder.(*gorm.Statement)
+	if !ok {
+		return
+	}
+
+	if len(jsonArrayAppend.values) == 0 {
+		// nothing to append, leave the column unchanged
+		switch stmt.Dialector.Name() {
+		case "mysql", "sqlite", "postgres":
+			builder.WriteQuoted(jsonArrayAppend.column)
+		}
+		return
+	}
+
+	switch stmt.Dialector.Name() {
+	case "mysql":
+		cast := "CAST(? AS JSON)"
+		if isMariaDB(stmt.Dialector) {
+			cast = "JSON_EXTRACT(?,'$')"
+		}
+		builder.WriteString("JSON_ARRAY_APPEND(COALESCE(")
+		builder.WriteQuoted(jsonArrayAppend.column)
+		builder.WriteString(",JSON_ARRAY())")
+		for _, value := range jsonArrayAppend.values {
+			builder.WriteString(",'$',")
+			addJSONVar(stmt, value, cast)
+		}
+		builder.WriteByte(')')
+
+	case "sqlite":
+		builder.WriteString("JSON_INSERT(COALESCE(")
+		builder.WriteQuoted(jsonArrayAppend.column)
+		builder.WriteString(",JSON_ARRAY())")
+		for _, value := range jsonArrayAppend.values {
+			builder.WriteString(",'$[#]',")
+			addJSONVar(stmt, value, "JSON(?)")
+		}
+		builder.WriteByte(')')
+
+	case "postgres":
+		// jsonb || jsonb concatenates two arrays, so wrap the values in an
+		// array to append a slice value as one nested element. The column is
+		// cast to jsonb so that json columns are supported as well.
+		builder.WriteString("COALESCE(")
+		builder.WriteQuoted(jsonArrayAppend.column)
+		builder.WriteString("::jsonb,'[]'::jsonb) || JSONB_BUILD_ARRAY(")
+		for idx, value := range jsonArrayAppend.values {
+			if idx > 0 {
+				builder.WriteByte(',')
+			}
+			addJSONVar(stmt, value, "?::jsonb")
+		}
+		builder.WriteByte(')')
+	}
+}
+
+// addJSONVar adds value to stmt as a JSON value, converting its JSON encoding
+// with cast unless value is a clause.Expression.
+func addJSONVar(stmt *gorm.Statement, value interface{}, cast string) {
+	if _, ok := value.(clause.Expression); ok {
+		stmt.AddVar(stmt, value)
+		return
+	}
+
+	b, err := json.Marshal(value)
+	if err != nil {
+		_ = stmt.AddError(err)
+		return
+	}
+	stmt.AddVar(stmt, gorm.Expr(cast, string(b)))
+}
+
 func JSONArrayQuery(column string) *JSONArrayExpression {
 	return &JSONArrayExpression{
 		column: column,
