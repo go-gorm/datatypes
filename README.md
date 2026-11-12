@@ -156,6 +156,23 @@ DB.Model(&UserWithJSON{}).Where("name = ?", "json-1").UpdateColumn("attributes",
 // UPDATE "user_with_jsons" SET "attributes" = JSONB_SET("attributes", '{friend}', '{"Name": "Bob", "Age": 21}') WHERE name = 'json-1'
 ```
 
+## JSON_ARRAY_APPEND
+
+sqlite, mysql, postgres supported
+
+Append values to a JSON array column in a single UPDATE. A NULL column is treated as an empty array, and each value is appended as one element (a slice becomes a nested array).
+
+```go
+DB.Model(&UserWithJSON{}).Where("name = ?", "json-1").UpdateColumn("attributes", datatypes.JSONArrayAppend("attributes", "tag3", []string{"a", "b"}))
+// MySQL
+// UPDATE `user_with_jsons` SET `attributes`=JSON_ARRAY_APPEND(COALESCE(`attributes`,JSON_ARRAY()),'$',CAST('"tag3"' AS JSON),'$',CAST('["a","b"]' AS JSON)) WHERE name = 'json-1'
+// SQLite
+// UPDATE `user_with_jsons` SET `attributes`=JSON_INSERT(COALESCE(`attributes`,JSON_ARRAY()),'$[#]',JSON('"tag3"'),'$[#]',JSON('["a","b"]')) WHERE name = 'json-1'
+// PostgreSQL
+// UPDATE "user_with_jsons" SET "attributes"=COALESCE("attributes"::jsonb,'[]'::jsonb) || JSONB_BUILD_ARRAY('"tag3"'::jsonb,'["a","b"]'::jsonb) WHERE name = 'json-1'
+```
+NOTE: MariaDB uses `JSON_EXTRACT(?,'$')` instead of `CAST(? AS JSON)`.
+
 ## JSONType[T]
 
 sqlite, mysql, postgres supported
