@@ -186,7 +186,12 @@ func (jsonQuery *JSONQueryExpression) Build(builder clause.Builder) {
 				builder.WriteString(")")
 			case jsonQuery.hasKeys:
 				if len(jsonQuery.keys) > 0 {
-					builder.WriteString("JSON_EXTRACT(")
+					if stmt.Dialector.Name() == "sqlite" {
+						// JSON_TYPE distinguishes a JSON null from a missing path.
+						builder.WriteString("JSON_TYPE(")
+					} else {
+						builder.WriteString("JSON_EXTRACT(")
+					}
 					builder.WriteQuoted(jsonQuery.column)
 					builder.WriteByte(',')
 					builder.AddVar(stmt, jsonQueryJoin(jsonQuery.keys))

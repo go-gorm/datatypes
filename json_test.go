@@ -139,6 +139,43 @@ func TestJSON(t *testing.T) {
 	}
 }
 
+func TestJSONHasKeyWithNullValue(t *testing.T) {
+	if !SupportedDriver("sqlite", "mysql", "postgres") {
+		t.Skip("JSONQuery is supported on SQLite, MySQL and PostgreSQL")
+	}
+
+	type JSONDocument struct {
+		ID         int
+		Attributes datatypes.JSON
+	}
+	if err := DB.Migrator().DropTable(&JSONDocument{}); err != nil {
+		t.Fatal(err)
+	}
+	if err := DB.AutoMigrate(&JSONDocument{}); err != nil {
+		t.Fatal(err)
+	}
+	docs := []JSONDocument{
+		{ID: 1, Attributes: datatypes.JSON(`{"status":null,"details":{"status":null}}`)},
+		{ID: 2, Attributes: datatypes.JSON(`{"status":false,"details":{"status":false}}`)},
+		{ID: 3, Attributes: datatypes.JSON(`{"details":{}}`)},
+		{ID: 4},
+	}
+	if err := DB.Create(&docs).Error; err != nil {
+		t.Fatal(err)
+	}
+	for _, keys := range [][]string{{"status"}, {"details", "status"}} {
+		t.Run(strings.Join(keys, "."), func(t *testing.T) {
+			var ids []int
+			err := DB.Model(&JSONDocument{}).Where(datatypes.JSONQuery("attributes").HasKey(keys...)).
+				Order("id").Pluck("id", &ids).Error
+			if err != nil {
+				t.Fatal(err)
+			}
+			AssertEqual(t, ids, []int{1, 2})
+		})
+	}
+}
+
 func TestJSONSliceScan(t *testing.T) {
 	if SupportedDriver("sqlite", "mysql", "postgres") {
 		type Param struct {
