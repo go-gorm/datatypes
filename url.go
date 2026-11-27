@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
-	"strings"
 
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
@@ -57,10 +56,9 @@ func (u *URL) UnmarshalJSON(data []byte) error {
 	if string(data) == "null" {
 		return nil
 	}
-	uu, err := url.Parse(strings.Trim(string(data), `"'`))
-	if err != nil {
+	var text string
+	if err := json.Unmarshal(data, &text); err != nil {
 		return err
 	}
-	*u = URL(*uu)
-	return nil
+	return u.Scan(text)
 }
