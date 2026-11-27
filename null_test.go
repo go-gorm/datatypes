@@ -2,8 +2,10 @@ package datatypes
 
 import (
 	"database/sql/driver"
+	"math"
 	"reflect"
 	"testing"
+	"time"
 )
 
 func TestNull_Scan(t *testing.T) {
@@ -73,6 +75,38 @@ func TestNull_Value(t *testing.T) {
 				t.Errorf("Value() got = %v, want %v", got, tt.want)
 			}
 		})
+	}
+}
+
+func TestNullIntegerParameters(t *testing.T) {
+	tests := []struct {
+		value driver.Valuer
+		want  int64
+	}{
+		{NewNull(int(-1)), -1},
+		{NewNull(int8(math.MinInt8)), math.MinInt8},
+		{NullInt16{V: math.MinInt16, Valid: true}, math.MinInt16},
+		{NullInt32{V: math.MaxInt32, Valid: true}, math.MaxInt32},
+		{NullByte{V: math.MaxUint8, Valid: true}, math.MaxUint8},
+		{NewNull(uint16(math.MaxUint16)), math.MaxUint16},
+		{NewNull(uint32(math.MaxUint32)), math.MaxUint32},
+		{NewNull(uint(0)), 0},
+		{NewNull(uint64(math.MaxInt64)), math.MaxInt64},
+	}
+	for _, tt := range tests {
+		got, err := driver.DefaultParameterConverter.ConvertValue(tt.value)
+		if err != nil || got != tt.want {
+			t.Errorf("binding %T: got (%v, %v), want (%d, nil)", tt.value, got, err, tt.want)
+		}
+	}
+}
+
+func TestNullPreservesDriverSpecificValues(t *testing.T) {
+	for _, value := range []any{uint64(math.MaxUint64), time.Minute, []string{"paid", "pending"}} {
+		got, err := NewNull(value).Value()
+		if err != nil || !reflect.DeepEqual(got, value) {
+			t.Errorf("Value() for %T: got (%#v, %v), want (%#v, nil)", value, got, err, value)
+		}
 	}
 }
 
