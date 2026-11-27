@@ -1,6 +1,7 @@
 package datatypes_test
 
 import (
+	"encoding/json"
 	"net/url"
 	"testing"
 
@@ -96,5 +97,26 @@ func TestURL(t *testing.T) {
 			Fragment: "frag",
 		}).Error; err == nil {
 		t.Fatalf("record couldn't have been identical: %v vs %v", result.Storage, us)
+	}
+}
+
+func TestURLJSONRoundTrip(t *testing.T) {
+	original, err := url.Parse("https://example.org/search?lang=en&page=2")
+	if err != nil {
+		t.Fatal(err)
+	}
+	encoded, err := json.Marshal(datatypes.URL(*original))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var got datatypes.URL
+	if err := json.Unmarshal(encoded, &got); err != nil {
+		t.Fatal(err)
+	}
+	if got.String() != original.String() {
+		t.Fatalf("round trip returned %q, want %q", got.String(), original.String())
+	}
+	if err := json.Unmarshal([]byte("42"), &got); err == nil {
+		t.Fatal("accepted a number as a URL")
 	}
 }
