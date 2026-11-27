@@ -2,6 +2,7 @@ package datatypes_test
 
 import (
 	"database/sql/driver"
+	"reflect"
 	"testing"
 
 	"gorm.io/datatypes"
@@ -270,5 +271,25 @@ func TestJSONTypeValueTypes(t *testing.T) {
 	}
 	if nilValue != nil {
 		t.Errorf("nil JSONSlice.Value() should return nil, got %v", nilValue)
+	}
+}
+
+func TestJSONScanReplacesPreviousRow(t *testing.T) {
+	type payload struct {
+		Labels map[string]string
+	}
+	var value datatypes.JSONType[payload]
+	var list datatypes.JSONSlice[payload]
+	for _, raw := range []string{`{"Labels":{"first":"one"}}`, `{"Labels":{"second":"two"}}`} {
+		if err := value.Scan(raw); err != nil {
+			t.Fatal(err)
+		}
+		if err := list.Scan([]byte("[" + raw + "]")); err != nil {
+			t.Fatal(err)
+		}
+	}
+	want := payload{Labels: map[string]string{"second": "two"}}
+	if !reflect.DeepEqual(value.Data(), want) || !reflect.DeepEqual(list, datatypes.JSONSlice[payload]{want}) {
+		t.Fatalf("second row retained previous data: value=%+v list=%+v", value.Data(), list)
 	}
 }

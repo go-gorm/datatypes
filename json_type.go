@@ -47,7 +47,12 @@ func (j *JSONType[T]) Scan(value interface{}) error {
 	default:
 		return errors.New(fmt.Sprint("Failed to unmarshal JSONB value:", value))
 	}
-	return json.Unmarshal(bytes, &j.data)
+	var data T
+	if err := json.Unmarshal(bytes, &data); err != nil {
+		return err
+	}
+	j.data = data
+	return nil
 }
 
 // MarshalJSON to output non base64 encoded []byte
@@ -125,7 +130,12 @@ func (j *JSONSlice[T]) Scan(value interface{}) error {
 	default:
 		return errors.New(fmt.Sprint("Failed to unmarshal JSONB value:", value))
 	}
-	return json.Unmarshal(bytes, &j)
+	var data JSONSlice[T]
+	if err := json.Unmarshal(bytes, &data); err != nil {
+		return err
+	}
+	*j = data
+	return nil
 }
 
 // GormDataType gorm common data type
