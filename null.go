@@ -5,6 +5,7 @@ import (
 	"database/sql/driver"
 	"errors"
 	"fmt"
+	"math"
 	"reflect"
 	"strconv"
 	"time"
@@ -88,6 +89,16 @@ func (n *Null[T]) Scan(value any) error {
 func (n Null[T]) Value() (driver.Value, error) {
 	if !n.Valid {
 		return nil, nil
+	}
+	// database/sql binds integers as int64. Leave larger unsigned values and
+	// named types to drivers that can encode them directly.
+	switch v := any(n.V).(type) {
+	case int, int8, int16, int32:
+		return reflect.ValueOf(v).Int(), nil
+	case uint, uint8, uint16, uint32, uint64:
+		if u := reflect.ValueOf(v).Uint(); u <= math.MaxInt64 {
+			return int64(u), nil
+		}
 	}
 	return n.V, nil
 }
