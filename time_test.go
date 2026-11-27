@@ -31,3 +31,23 @@ func TestTime(t *testing.T) {
 		AssertEqual(t, result.Time, datatypes.NewTime(1, 2, 3, 0))
 	}
 }
+
+func TestScanFractionalSeconds(t *testing.T) {
+	for _, tc := range []struct {
+		input string
+		nsec  int
+	}{
+		{"12:34:56", 0},
+		{"12:34:56.1", 100000000},
+		{"12:34:56.004002", 4002000},
+		{"12:34:56.123456789", 123456789},
+	} {
+		want := datatypes.NewTime(12, 34, 56, tc.nsec)
+		for _, input := range []interface{}{tc.input, []byte(tc.input)} {
+			var got datatypes.Time
+			if err := got.Scan(input); err != nil || got != want {
+				t.Errorf("Scan(%v) = %v, %v; want %v", input, got, err, want)
+			}
+		}
+	}
+}
