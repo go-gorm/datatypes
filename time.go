@@ -67,7 +67,12 @@ func (t *Time) Scan(src interface{}) error {
 
 func (t *Time) setFromString(str string) {
 	var h, m, s, n int
-	fmt.Sscanf(str, "%02d:%02d:%02d.%09d", &h, &m, &s, &n)
+	clock, fraction, _ := strings.Cut(str, ".")
+	fmt.Sscanf(clock, "%02d:%02d:%02d", &h, &m, &s)
+	if fraction != "" {
+		// SQL TIME may omit trailing zeros from its fractional second.
+		fmt.Sscanf(fraction+"000000000", "%09d", &n)
+	}
 	*t = newTime(h, m, s, n)
 }
 
